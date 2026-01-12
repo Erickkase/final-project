@@ -5,8 +5,6 @@ on:
     workflows: ["CI/CD - Dev to QA"]
     types:
       - completed
-    branches:
-      - qa
   workflow_dispatch:
     inputs:
       services:
@@ -18,7 +16,12 @@ jobs:
   detect-changes:
     name: Detect Changed Services
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'qa'
+      )
     outputs:
       api-gateway: ${{ steps.changes.outputs.api-gateway }}
       auth-service: ${{ steps.changes.outputs.auth-service }}
@@ -27,20 +30,52 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - name: Detect changed services
         id: changes
         run: |
           # Get the list of changed files from the last commit in qa
-          CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "services/")
+          CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "")
           
-          echo "Changed files in last merge: $CHANGED_FILES"
+          echo "Changed files in last merge:"
+          echo "$CHANGED_FILES"
           
-          # Check which services changed
-          echo "api-gateway=$(echo "$CHANGED_FILES" | grep -q '^services/api-gateway/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "auth-service=$(echo "$CHANGED_FILES" | grep -q '^services/auth-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "emotion-service=$(echo "$CHANGED_FILES" | grep -q '^services/emotion-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          # Check if any service files changed
+          if echo "$CHANGED_FILES" | grep -q '^services/'; then
+            echo "✅ Services directory has changes"
+            
+            # Check which specific services changed
+            if echo "$CHANGED_FILES" | grep -q '^services/api-gateway/'; then
+              echo "api-gateway=true" >> $GITHUB_OUTPUT
+              echo "  ✅ API Gateway changed"
+            else
+              echo "api-gateway=false" >> $GITHUB_OUTPUT
+              echo "  ⏭️ API Gateway unchanged"
+            fi
+            
+            if echo "$CHANGED_FILES" | grep -q '^services/auth-service/'; then
+              echo "auth-service=true" >> $GITHUB_OUTPUT
+              echo "  ✅ Auth Service changed"
+            else
+              echo "auth-service=false" >> $GITHUB_OUTPUT
+              echo "  ⏭️ Auth Service unchanged"
+            fi
+            
+            if echo "$CHANGED_FILES" | grep -q '^services/emotion-service/'; then
+              echo "emotion-service=true" >> $GITHUB_OUTPUT
+              echo "  ✅ Emotion Service changed"
+            else
+              echo "emotion-service=false" >> $GITHUB_OUTPUT
+              echo "  ⏭️ Emotion Service unchanged"
+            fi
+          else
+            echo "⏭️ No changes in services directory - skipping all builds"
+            echo "api-gateway=false" >> $GITHUB_OUTPUT
+            echo "auth-service=false" >> $GITHUB_OUTPUT
+            echo "emotion-service=false" >> $GITHUB_OUTPUT
+          fi
 
   # Build and Push API Gateway
   build-api-gateway:
