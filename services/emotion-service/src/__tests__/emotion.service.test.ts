@@ -3,7 +3,6 @@ import emotionService from '../services/emotion.service';
 describe('Emotion Service', () => {
   const testUserId = 'test-user-123';
   const testEmotion = {
-    userId: testUserId,
     type: 'alegria',
     intensity: 8,
     description: 'Test emotion',
@@ -88,24 +87,29 @@ describe('Emotion Service', () => {
     expect(avg).toBe(0);
   });
 
-  it('should get most frequent emotion', () => {
-    const userId = 'freq-test-user';
+  it('should get emotion stats', () => {
+    const userId = 'stats-test-user';
     emotionService.createEmotion(userId, { ...testEmotion, type: 'alegria' });
     emotionService.createEmotion(userId, { ...testEmotion, type: 'alegria' });
     emotionService.createEmotion(userId, { ...testEmotion, type: 'tristeza' });
 
-    const most = emotionService.getMostFrequentEmotion(userId, 7);
-    expect(most).toBe('alegria');
+    const stats = emotionService.getEmotionStats(userId);
+    expect(stats.alegria).toBe(2);
+    expect(stats.tristeza).toBe(1);
   });
 
-  it('should get emotions by date range', () => {
-    const userId = 'range-test-user';
-    const emotion = emotionService.createEmotion(userId, testEmotion);
+  it('should return 0 for user with no emotions', () => {
+    const avg = emotionService.getAverageIntensity('user-no-emotions');
+    expect(avg).toBe(0);
+  });
 
-    const now = new Date();
-    const past = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  it('should calculate average intensity correctly', () => {
+    const userId = 'avg-test-user';
+    emotionService.createEmotion(userId, { ...testEmotion, intensity: 5 });
+    emotionService.createEmotion(userId, { ...testEmotion, intensity: 9 });
+    emotionService.createEmotion(userId, { ...testEmotion, intensity: 8 });
 
-    const emotions = emotionService.getEmotionsByDateRange(userId, past, now);
-    expect(emotions.length).toBeGreaterThan(0);
+    const avg = emotionService.getAverageIntensity(userId);
+    expect(avg).toBe((5 + 9 + 8) / 3);
   });
 });

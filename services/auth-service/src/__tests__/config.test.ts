@@ -1,4 +1,4 @@
-import config from '../../config/config';
+import config from '../config/config';
 
 describe('Auth Service - Config', () => {
   it('should load configuration', () => {

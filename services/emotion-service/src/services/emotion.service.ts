@@ -22,9 +22,10 @@ class EmotionService {
   /**
    * Crea una nueva emoción
    */
-  createEmotion(userId: string, emotionData: Omit<Emotion, 'emotionId' | 'createdAt' | 'updatedAt'>): Emotion {
+  createEmotion(userId: string, emotionData: Omit<Emotion, 'emotionId' | 'userId' | 'createdAt' | 'updatedAt'>): Emotion {
     const emotion: Emotion = {
       emotionId: uuidv4(),
+      userId,
       ...emotionData,
       createdAt: new Date(),
       updatedAt: new Date(),
