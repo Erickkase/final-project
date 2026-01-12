@@ -52,6 +52,7 @@ jobs:
     if: needs.detect-changes.outputs.api-gateway == 'true' || github.event_name == 'pull_request'
     outputs:
       status: ${{ job.status }}
+    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -90,6 +91,7 @@ jobs:
     if: needs.detect-changes.outputs.auth-service == 'true' || github.event_name == 'pull_request'
     outputs:
       status: ${{ job.status }}
+    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -128,6 +130,7 @@ jobs:
     if: needs.detect-changes.outputs.emotion-service == 'true' || github.event_name == 'pull_request'
     outputs:
       status: ${{ job.status }}
+    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -174,6 +177,8 @@ jobs:
       (needs.test-api-gateway.result == 'success' || 
        needs.test-auth-service.result == 'success' || 
        needs.test-emotion-service.result == 'success')
+    outputs:
+      merged-services: ${{ steps.merge-summary.outputs.services }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -223,11 +228,35 @@ jobs:
           git checkout dev
 
       - name: Summary
+        id: merge-summary
         run: |
           echo "## QA Merge Summary"
-          echo "API Gateway: ${{ needs.test-api-gateway.result }}"
-          echo "Auth Service: ${{ needs.test-auth-service.result }}"
-          echo "Emotion Service: ${{ needs.test-emotion-service.result }}"
+          MERGED=""
+          
+          if [ "${{ needs.test-api-gateway.result }}" == "success" ]; then
+            echo "✅ API Gateway: Merged"
+            MERGED="$MERGED api-gateway"
+          else
+            echo "❌ API Gateway: Not merged (status: ${{ needs.test-api-gateway.result }})"
+          fi
+          
+          if [ "${{ needs.test-auth-service.result }}" == "success" ]; then
+            echo "✅ Auth Service: Merged"
+            MERGED="$MERGED auth-service"
+          else
+            echo "❌ Auth Service: Not merged (status: ${{ needs.test-auth-service.result }})"
+          fi
+          
+          if [ "${{ needs.test-emotion-service.result }}" == "success" ]; then
+            echo "✅ Emotion Service: Merged"
+            MERGED="$MERGED emotion-service"
+          else
+            echo "❌ Emotion Service: Not merged (status: ${{ needs.test-emotion-service.result }})"
+          fi
+          
+          echo "services=$MERGED" >> $GITHUB_OUTPUT
+          echo ""
+          echo "🐳 Docker Build will trigger automatically for merged services"
 
   # Summary
   test-summary:
