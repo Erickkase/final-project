@@ -1,4 +1,4 @@
-import config from '../../config/config';
+import config from '../config/config';
 
 describe('API Gateway - Config', () => {
   it('should load configuration', () => {

@@ -32,3 +32,27 @@ describe('API Gateway - Error Handling', () => {
     expect(response.status).toBeGreaterThanOrEqual(400);
   });
 });
+
+describe('API Gateway - Routes Proxy', () => {
+  it('should proxy auth routes', async () => {
+    const response = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'test@test.com', password: 'Test123!' });
+    
+    expect(response.status).toBeDefined();
+  });
+
+  it('should proxy emotion routes', async () => {
+    const response = await request(app)
+      .get('/api/v1/emotion/user/123');
+    
+    expect(response.status).toBeDefined();
+  });
+
+  it('should proxy report routes', async () => {
+    const response = await request(app)
+      .get('/api/v1/report/user/123/15days');
+    
+    expect(response.status).toBeDefined();
+  });
+});
