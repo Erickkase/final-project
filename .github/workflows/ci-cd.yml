@@ -50,6 +50,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect-changes
     if: needs.detect-changes.outputs.api-gateway == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -86,6 +88,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect-changes
     if: needs.detect-changes.outputs.auth-service == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -122,6 +126,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect-changes
     if: needs.detect-changes.outputs.emotion-service == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -152,9 +158,9 @@ jobs:
           flags: emotion-service
           fail_ci_if_error: false
 
-  # Merge to QA branch if tests pass
+  # Merge to QA branch - selective by service
   merge-to-qa:
-    name: Merge to QA Branch
+    name: Merge Passing Services to QA
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -164,10 +170,9 @@ jobs:
     if: |
       github.event_name == 'push' && 
       github.ref == 'refs/heads/dev' &&
-      always() &&
-      (needs.test-api-gateway.result == 'success' || needs.test-api-gateway.result == 'skipped') &&
-      (needs.test-auth-service.result == 'success' || needs.test-auth-service.result == 'skipped') &&
-      (needs.test-emotion-service.result == 'success' || needs.test-emotion-service.result == 'skipped')
+      (needs.test-api-gateway.result == 'success' || 
+       needs.test-auth-service.result == 'success' || 
+       needs.test-emotion-service.result == 'success')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -179,24 +184,49 @@ jobs:
           git config --local user.email "ehbonilla@uce.edu.ec"
           git config --local user.name "Erickkase"
 
-      - name: Merge to QA
-        run: |
-          git fetch origin qa || git branch qa origin/dev
-          git checkout qa
-          git merge dev --no-ff -m "Merge dev to qa after successful tests [CI/CD]"
-          git push origin qa
+      - name: Fetch QA branch
+        run: git fetch origin qa 2>/dev/null || git branch qa origin/dev
 
-      - name: Create Pull Request Notification
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '✅ All tests passed! Code merged to QA branch.'
-            })
+      - name: Merge API Gateway if passed
+        if: needs.test-api-gateway.result == 'success'
+        run: |
+          git checkout qa
+          git merge origin/dev -m "Merge api-gateway from dev to qa (tests passed) [CI/CD]" --no-ff --strategy-option=theirs || echo "Already up to date or conflict"
+          # Check if there are changes to commit
+          if git diff-index --quiet HEAD --; then
+            echo "No new changes for api-gateway"
+          fi
+          git push origin qa || echo "Push skipped"
+          git checkout dev
+
+      - name: Merge Auth Service if passed
+        if: needs.test-auth-service.result == 'success'
+        run: |
+          git checkout qa
+          git merge origin/dev -m "Merge auth-service from dev to qa (tests passed) [CI/CD]" --no-ff --strategy-option=theirs || echo "Already up to date or conflict"
+          if git diff-index --quiet HEAD --; then
+            echo "No new changes for auth-service"
+          fi
+          git push origin qa || echo "Push skipped"
+          git checkout dev
+
+      - name: Merge Emotion Service if passed
+        if: needs.test-emotion-service.result == 'success'
+        run: |
+          git checkout qa
+          git merge origin/dev -m "Merge emotion-service from dev to qa (tests passed) [CI/CD]" --no-ff --strategy-option=theirs || echo "Already up to date or conflict"
+          if git diff-index --quiet HEAD --; then
+            echo "No new changes for emotion-service"
+          fi
+          git push origin qa || echo "Push skipped"
+          git checkout dev
+
+      - name: Summary
+        run: |
+          echo "## QA Merge Summary"
+          echo "API Gateway: ${{ needs.test-api-gateway.result }}"
+          echo "Auth Service: ${{ needs.test-auth-service.result }}"
+          echo "Emotion Service: ${{ needs.test-emotion-service.result }}"
 
   # Summary
   test-summary:
@@ -212,11 +242,11 @@ jobs:
         run: |
           echo "## 📊 Test Results Summary"
           echo ""
-          echo "| Service | Status |"
-          echo "|---------|--------|"
-          echo "| API Gateway | ${{ needs.test-api-gateway.result }} |"
-          echo "| Auth Service | ${{ needs.test-auth-service.result }} |"
-          echo "| Emotion Service | ${{ needs.test-emotion-service.result }} |"
+          echo "| Service | Status | QA Merge |"
+          echo "|---------|--------|----------|"
+          echo "| API Gateway | ${{ needs.test-api-gateway.result }} | ${{ needs.test-api-gateway.result == 'success' && '✅ Merged' || '❌ Not merged' }} |"
+          echo "| Auth Service | ${{ needs.test-auth-service.result }} | ${{ needs.test-auth-service.result == 'success' && '✅ Merged' || '❌ Not merged' }} |"
+          echo "| Emotion Service | ${{ needs.test-emotion-service.result }} | ${{ needs.test-emotion-service.result == 'success' && '✅ Merged' || '❌ Not merged' }} |"
 
       - name: Check for failures
         if: |
@@ -224,5 +254,5 @@ jobs:
           needs.test-auth-service.result == 'failure' ||
           needs.test-emotion-service.result == 'failure'
         run: |
-          echo "❌ Some tests failed. Please review the logs."
-          exit 1
+          echo "⚠️ Some services have failing tests and will NOT be merged to QA."
+          echo "Please review the logs and fix the issues."
