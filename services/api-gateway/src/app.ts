@@ -6,12 +6,6 @@ import rateLimit from 'express-rate-limit';
 import { v4 as uuidv4 } from 'uuid';
 import config from './config/config';
 
-// Importar rutas
-import healthRoutes from './routes/health.routes';
-import authRoutes from './routes/auth.routes';
-import emotionRoutes from './routes/emotion.routes';
-import reportRoutes from './routes/report.routes';
-
 const app = express();
 
 // Interfaces para request extendido
@@ -80,13 +74,20 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // ========== RUTAS ==========
 
-// Health Check
-app.use('/health', healthRoutes);
+// Health Check - Ruta simple para verificar si el servicio está arriba
+app.get('/health', (req: Request, res: Response) => {
+  res.status(200).send('ok');
+});
 
 // API v1
 const apiV1 = express.Router();
 
-// Rutas de microservicios
+// Rutas de microservicios - Importar dinámicamente
+const healthRoutes = require('./routes/health.routes').default || require('./routes/health.routes');
+const authRoutes = require('./routes/auth.routes').default || require('./routes/auth.routes');
+const emotionRoutes = require('./routes/emotion.routes').default || require('./routes/emotion.routes');
+const reportRoutes = require('./routes/report.routes').default || require('./routes/report.routes');
+
 apiV1.use('/auth', authRoutes);
 apiV1.use('/emotions', emotionRoutes);
 apiV1.use('/reports', reportRoutes);
