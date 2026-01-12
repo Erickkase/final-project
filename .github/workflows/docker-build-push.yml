@@ -60,12 +60,15 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./services/api-gateway
+          file: ./services/api-gateway/Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:latest
             ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
 
   # Build and Push Auth Service
   build-auth-service:
@@ -90,12 +93,15 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./services/auth-service
+          file: ./services/auth-service/Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:latest
             ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
 
   # Build and Push Emotion Service
   build-emotion-service:
@@ -120,12 +126,15 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./services/emotion-service
+          file: ./services/emotion-service/Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:latest
             ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
 
   # Build Summary
   build-summary:
