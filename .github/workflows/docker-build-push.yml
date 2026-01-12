@@ -7,6 +7,12 @@ on:
     paths:
       - 'services/**'
       - '.github/workflows/docker-build-push.yml'
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to build (comma-separated: api-gateway,auth-service,emotion-service)'
+        required: false
+        default: 'api-gateway,auth-service,emotion-service'
 
 jobs:
   detect-changes:
@@ -26,14 +32,21 @@ jobs:
         id: changes
         run: |
           # Get the list of changed files
-          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "services/api-gateway/ services/auth-service/ services/emotion-service/")
           
           echo "Changed files: $CHANGED_FILES"
           
-          # Check which services changed
-          echo "api-gateway=$(echo "$CHANGED_FILES" | grep -q '^services/api-gateway/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "auth-service=$(echo "$CHANGED_FILES" | grep -q '^services/auth-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "emotion-service=$(echo "$CHANGED_FILES" | grep -q '^services/emotion-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          # Check which services changed - set to true if no previous commit (first push)
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            echo "api-gateway=$(echo "$CHANGED_FILES" | grep -q '^services/api-gateway/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+            echo "auth-service=$(echo "$CHANGED_FILES" | grep -q '^services/auth-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+            echo "emotion-service=$(echo "$CHANGED_FILES" | grep -q '^services/emotion-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          else
+            # First push to qa, build all services
+            echo "api-gateway=true" >> $GITHUB_OUTPUT
+            echo "auth-service=true" >> $GITHUB_OUTPUT
+            echo "emotion-service=true" >> $GITHUB_OUTPUT
+          fi
 
   # Build and Push API Gateway
   build-api-gateway:
