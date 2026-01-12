@@ -29,9 +29,6 @@ RUN npm ci --only=production
 # Copy compiled code from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy .env.example as reference
-COPY .env.example .env.example
-
 # Expose port
 EXPOSE 3001
 
