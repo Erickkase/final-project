@@ -165,9 +165,9 @@ jobs:
           flags: emotion-service
           fail_ci_if_error: false
 
-  # Merge to QA branch - selective by service
+  # Merge to QA branch for passing services
   merge-to-qa:
-    name: Merge Passing Services to QA
+    name: Merge to QA
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -181,8 +181,6 @@ jobs:
       (needs.test-api-gateway.result == 'success' || 
        needs.test-auth-service.result == 'success' || 
        needs.test-emotion-service.result == 'success')
-    outputs:
-      merged-services: ${{ steps.merge-summary.outputs.services }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -192,77 +190,14 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --local user.email "ehbonilla@uce.edu.ec"
-          git config --local user.name "Erickkase"
-          git config --local url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
 
-      - name: Fetch QA branch
-        run: git fetch origin qa 2>/dev/null || git branch qa origin/dev
-
-      - name: Merge API Gateway if passed
-        if: needs.test-api-gateway.result == 'success'
+      - name: Merge to QA
         run: |
           git checkout qa
-          git merge origin/dev -m "Merge api-gateway from dev to qa (tests passed) [CI/CD]" --no-ff --strategy-option=theirs || echo "Already up to date or conflict"
-          # Check if there are changes to commit
-          if git diff-index --quiet HEAD --; then
-            echo "No new changes for api-gateway"
-          fi
-          git push origin qa || echo "Push skipped"
-          git checkout dev
-
-      - name: Merge Auth Service if passed
-        if: needs.test-auth-service.result == 'success'
-        run: |
-          git checkout qa
-          git merge origin/dev -m "Merge auth-service from dev to qa (tests passed) [CI/CD]" --no-ff --strategy-option=theirs || echo "Already up to date or conflict"
-          if git diff-index --quiet HEAD --; then
-            echo "No new changes for auth-service"
-          fi
-          git push origin qa || echo "Push skipped"
-          git checkout dev
-
-      - name: Merge Emotion Service if passed
-        if: needs.test-emotion-service.result == 'success'
-        run: |
-          git checkout qa
-          git merge origin/dev -m "Merge emotion-service from dev to qa (tests passed) [CI/CD]" --no-ff --strategy-option=theirs || echo "Already up to date or conflict"
-          if git diff-index --quiet HEAD --; then
-            echo "No new changes for emotion-service"
-          fi
-          git push origin qa || echo "Push skipped"
-          git checkout dev
-
-      - name: Summary
-        id: merge-summary
-        run: |
-          echo "## QA Merge Summary"
-          MERGED=""
-          
-          if [ "${{ needs.test-api-gateway.result }}" == "success" ]; then
-            echo "✅ API Gateway: Merged"
-            MERGED="$MERGED api-gateway"
-          else
-            echo "❌ API Gateway: Not merged (status: ${{ needs.test-api-gateway.result }})"
-          fi
-          
-          if [ "${{ needs.test-auth-service.result }}" == "success" ]; then
-            echo "✅ Auth Service: Merged"
-            MERGED="$MERGED auth-service"
-          else
-            echo "❌ Auth Service: Not merged (status: ${{ needs.test-auth-service.result }})"
-          fi
-          
-          if [ "${{ needs.test-emotion-service.result }}" == "success" ]; then
-            echo "✅ Emotion Service: Merged"
-            MERGED="$MERGED emotion-service"
-          else
-            echo "❌ Emotion Service: Not merged (status: ${{ needs.test-emotion-service.result }})"
-          fi
-          
-          echo "services=$MERGED" >> $GITHUB_OUTPUT
-          echo ""
-          echo "🐳 Docker Build will trigger automatically for merged services"
+          git merge --no-ff dev -m "chore: merge passing services from dev to qa"
+          git push origin qa
 
   # Summary
   test-summary:

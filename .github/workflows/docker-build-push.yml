@@ -1,11 +1,6 @@
 name: Docker Build and Push to Hub
 
 on:
-  push:
-    branches:
-      - qa
-    paths:
-      - 'services/**'
   workflow_run:
     workflows: ["CI/CD - Dev to QA"]
     types:
@@ -23,6 +18,7 @@ jobs:
   detect-changes:
     name: Detect Changed Services
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     outputs:
       api-gateway: ${{ steps.changes.outputs.api-gateway }}
       auth-service: ${{ steps.changes.outputs.auth-service }}
@@ -36,31 +32,15 @@ jobs:
       - name: Detect changed services
         id: changes
         run: |
-          # For workflow_run, always build services since we know merge-to-qa succeeded
-          # For manual push, detect actual changes
-          if [ "${{ github.event_name }}" == "workflow_run" ]; then
-            echo "Triggered by workflow_run - building all services"
-            echo "api-gateway=true" >> $GITHUB_OUTPUT
-            echo "auth-service=true" >> $GITHUB_OUTPUT
-            echo "emotion-service=true" >> $GITHUB_OUTPUT
-          else
-            # Get the list of changed files
-            CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "services/api-gateway/ services/auth-service/ services/emotion-service/")
-            
-            echo "Changed files: $CHANGED_FILES"
-            
-            # Check which services changed
-            if git rev-parse HEAD~1 >/dev/null 2>&1; then
-              echo "api-gateway=$(echo "$CHANGED_FILES" | grep -q '^services/api-gateway/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-              echo "auth-service=$(echo "$CHANGED_FILES" | grep -q '^services/auth-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-              echo "emotion-service=$(echo "$CHANGED_FILES" | grep -q '^services/emotion-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-            else
-              # First push to qa, build all services
-              echo "api-gateway=true" >> $GITHUB_OUTPUT
-              echo "auth-service=true" >> $GITHUB_OUTPUT
-              echo "emotion-service=true" >> $GITHUB_OUTPUT
-            fi
-          fi
+          # Get the list of changed files from the last commit in qa
+          CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "services/")
+          
+          echo "Changed files in last merge: $CHANGED_FILES"
+          
+          # Check which services changed
+          echo "api-gateway=$(echo "$CHANGED_FILES" | grep -q '^services/api-gateway/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "auth-service=$(echo "$CHANGED_FILES" | grep -q '^services/auth-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "emotion-service=$(echo "$CHANGED_FILES" | grep -q '^services/emotion-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
   # Build and Push API Gateway
   build-api-gateway:
