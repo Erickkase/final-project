@@ -67,6 +67,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+
 // Logger de solicitud
 app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`[${new Date().toISOString()}] ${req.requestId} ${req.method} ${req.url}`);
