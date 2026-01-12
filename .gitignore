@@ -1,2 +1,10 @@
 ARCHITECTURE.md
 CHECKLIST-ENTREGA-QA-PROD.md
+services/api-gateway/.env.example
+services/auth-service/.env.example
+services/emotion-service/.env.example
+CI-CD.md
+IMPLEMENTATION-SUMMARY.md
+QUICK-START-CI.md
+WORKFLOW-SUMMARY.md
+.github/workflows/README.md
