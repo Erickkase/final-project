@@ -1,4 +1,4 @@
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import config from '../config/config';
 
 export interface TokenPayload {
@@ -14,20 +14,22 @@ class JWTService {
    * Genera un token JWT
    */
   generateToken(payload: Omit<TokenPayload, 'iat' | 'exp'>): string {
-    return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.expiration,
+    const options: SignOptions = {
+      expiresIn: config.jwt.expiration as any,
       algorithm: 'HS256',
-    });
+    };
+    return jwt.sign(payload, config.jwt.secret as string, options);
   }
 
   /**
    * Genera un refresh token
    */
   generateRefreshToken(userId: string): string {
-    return jwt.sign({ userId }, config.jwt.refreshSecret, {
-      expiresIn: config.jwt.refreshExpiration,
+    const options: SignOptions = {
+      expiresIn: config.jwt.refreshExpiration as any,
       algorithm: 'HS256',
-    });
+    };
+    return jwt.sign({ userId }, config.jwt.refreshSecret as string, options);
   }
 
   /**
@@ -35,7 +37,7 @@ class JWTService {
    */
   verifyToken(token: string): TokenPayload | null {
     try {
-      const decoded = jwt.verify(token, config.jwt.secret, {
+      const decoded = jwt.verify(token, config.jwt.secret as string, {
         algorithms: ['HS256'],
       }) as TokenPayload;
       return decoded;
@@ -50,7 +52,7 @@ class JWTService {
    */
   verifyRefreshToken(token: string): { userId: string } | null {
     try {
-      const decoded = jwt.verify(token, config.jwt.refreshSecret, {
+      const decoded = jwt.verify(token, config.jwt.refreshSecret as string, {
         algorithms: ['HS256'],
       }) as { userId: string };
       return decoded;
