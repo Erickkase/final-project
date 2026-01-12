@@ -168,6 +168,7 @@ jobs:
       - test-auth-service
       - test-emotion-service
     if: |
+      always() &&
       github.event_name == 'push' && 
       github.ref == 'refs/heads/dev' &&
       (needs.test-api-gateway.result == 'success' || 
@@ -247,12 +248,16 @@ jobs:
           echo "| API Gateway | ${{ needs.test-api-gateway.result }} | ${{ needs.test-api-gateway.result == 'success' && '✅ Merged' || '❌ Not merged' }} |"
           echo "| Auth Service | ${{ needs.test-auth-service.result }} | ${{ needs.test-auth-service.result == 'success' && '✅ Merged' || '❌ Not merged' }} |"
           echo "| Emotion Service | ${{ needs.test-emotion-service.result }} | ${{ needs.test-emotion-service.result == 'success' && '✅ Merged' || '❌ Not merged' }} |"
+          echo ""
+          echo "✅ = Tests passed and merged to QA"
+          echo "❌ = Tests failed or skipped (not merged)"
 
-      - name: Check for failures
-        if: |
-          needs.test-api-gateway.result == 'failure' ||
-          needs.test-auth-service.result == 'failure' ||
-          needs.test-emotion-service.result == 'failure'
+      - name: Services Status
+        if: always()
         run: |
-          echo "⚠️ Some services have failing tests and will NOT be merged to QA."
-          echo "Please review the logs and fix the issues."
+          if [ "${{ needs.test-api-gateway.result }}" == "failure" ] || [ "${{ needs.test-auth-service.result }}" == "failure" ] || [ "${{ needs.test-emotion-service.result }}" == "failure" ]; then
+            echo "⚠️ Some services have failing tests and will NOT be merged to QA."
+            echo "Please review the logs and fix the issues."
+          else
+            echo "✅ All tested services passed!"
+          fi
