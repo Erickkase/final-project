@@ -165,9 +165,9 @@ jobs:
           flags: emotion-service
           fail_ci_if_error: false
 
-  # Merge to QA branch for passing services
-  merge-to-qa:
-    name: Merge to QA
+  # Create Pull Request to QA branch for passing services
+  create-pr-to-qa:
+    name: Create PR to QA
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -184,20 +184,58 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Build PR Summary
+        id: pr-summary
+        run: |
+          echo "## 📊 Test Results" > pr_body.txt
+          echo "" >> pr_body.txt
+          echo "| Service | Status |" >> pr_body.txt
+          echo "|---------|--------|" >> pr_body.txt
+          
+          PASSING_SERVICES=""
+          
+          if [ "${{ needs.test-api-gateway.result }}" == "success" ]; then
+            echo "| API Gateway | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- API Gateway\n"
+          else
+            echo "| API Gateway | ❌ ${{ needs.test-api-gateway.result }} |" >> pr_body.txt
+          fi
+          
+          if [ "${{ needs.test-auth-service.result }}" == "success" ]; then
+            echo "| Auth Service | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- Auth Service\n"
+          else
+            echo "| Auth Service | ❌ ${{ needs.test-auth-service.result }} |" >> pr_body.txt
+          fi
+          
+          if [ "${{ needs.test-emotion-service.result }}" == "success" ]; then
+            echo "| Emotion Service | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- Emotion Service\n"
+          else
+            echo "| Emotion Service | ❌ ${{ needs.test-emotion-service.result }} |" >> pr_body.txt
+          fi
+          
+          echo "" >> pr_body.txt
+          echo "## ✅ Services Ready for QA" >> pr_body.txt
+          echo "" >> pr_body.txt
+          echo -e "$PASSING_SERVICES" >> pr_body.txt
+          echo "" >> pr_body.txt
+          echo "All tests passed successfully. Ready to merge to QA branch." >> pr_body.txt
+          echo "" >> pr_body.txt
+          echo "🐳 **Note:** Docker images will be built automatically after PR approval and merge." >> pr_body.txt
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
         with:
-          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Configure Git
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-
-      - name: Merge to QA
-        run: |
-          git checkout qa
-          git merge --no-ff dev -m "chore: merge passing services from dev to qa"
-          git push origin qa
+          branch: dev
+          base: qa
+          title: "🚀 Deploy passing services to QA"
+          body-path: pr_body.txt
+          labels: |
+            automated-pr
+            qa-deployment
 
   # Summary
   test-summary:
@@ -215,19 +253,19 @@ jobs:
           echo ""
           echo "| Service | Status | QA Merge |"
           echo "|---------|--------|----------|"
-          echo "| API Gateway | ${{ needs.test-api-gateway.result }} | ${{ needs.test-api-gateway.result == 'success' && '✅ Merged' || '❌ Not merged' }} |"
-          echo "| Auth Service | ${{ needs.test-auth-service.result }} | ${{ needs.test-auth-service.result == 'success' && '✅ Merged' || '❌ Not merged' }} |"
-          echo "| Emotion Service | ${{ needs.test-emotion-service.result }} | ${{ needs.test-emotion-service.result == 'success' && '✅ Merged' || '❌ Not merged' }} |"
+          echo "| API Gateway | ${{ needs.test-api-gateway.result }} | ${{ needs.test-api-gateway.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
+          echo "| Auth Service | ${{ needs.test-auth-service.result }} | ${{ needs.test-auth-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
+          echo "| Emotion Service | ${{ needs.test-emotion-service.result }} | ${{ needs.test-emotion-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
           echo ""
-          echo "✅ = Tests passed and merged to QA"
-          echo "❌ = Tests failed or skipped (not merged)"
+          echo "✅ = Tests passed, PR to QA will be created"
+          echo "❌ = Tests failed or skipped (no PR)"
 
       - name: Services Status
         if: always()
         run: |
           if [ "${{ needs.test-api-gateway.result }}" == "failure" ] || [ "${{ needs.test-auth-service.result }}" == "failure" ] || [ "${{ needs.test-emotion-service.result }}" == "failure" ]; then
-            echo "⚠️ Some services have failing tests and will NOT be merged to QA."
+            echo "⚠️ Some services have failing tests. PR to QA will only include passing services."
             echo "Please review the logs and fix the issues."
           else
-            echo "✅ All tested services passed!"
+            echo "✅ All tested services passed! PR to QA will be created."
           fi
