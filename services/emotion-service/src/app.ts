@@ -89,6 +89,7 @@ app.get('/health', (req: Request, res: Response) => {
   res.status(200).send('ok');
 });
 
+
 // API v1
 const apiV1 = express.Router();
 
