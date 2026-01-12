@@ -13,6 +13,10 @@ on:
     paths:
       - 'services/**'
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   detect-changes:
     name: Detect Changed Services
@@ -184,11 +188,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
         run: |
           git config --local user.email "ehbonilla@uce.edu.ec"
           git config --local user.name "Erickkase"
+          git config --local url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
       - name: Fetch QA branch
         run: git fetch origin qa 2>/dev/null || git branch qa origin/dev
