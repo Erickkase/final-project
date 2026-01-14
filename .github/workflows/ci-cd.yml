@@ -226,16 +226,26 @@ jobs:
           echo "🐳 **Note:** Docker images will be built automatically after PR approval and merge." >> pr_body.txt
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: dev
-          base: qa
-          title: "🚀 Deploy passing services to QA"
-          body-path: pr_body.txt
-          labels: |
-            automated-pr
-            qa-deployment
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --base qa --head dev --json number --jq '.[0].number' || echo "")
+          
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists, updating it..."
+            gh pr edit $EXISTING_PR --body-file pr_body.txt
+            echo "✅ Updated existing PR #$EXISTING_PR"
+          else
+            echo "Creating new PR from dev to qa..."
+            gh pr create \
+              --base qa \
+              --head dev \
+              --title "🚀 Deploy passing services to QA" \
+              --body-file pr_body.txt \
+              --label "automated-pr,qa-deployment"
+            echo "✅ Created new PR"
+          fi
 
   # Summary
   test-summary:
