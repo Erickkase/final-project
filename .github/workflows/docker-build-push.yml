@@ -32,10 +32,45 @@ jobs:
       - name: Detect changed services
         id: changes
         run: |
-          echo "🐳 PR merged to QA - Building all service images"
-          echo "api-gateway=true" >> $GITHUB_OUTPUT
-          echo "auth-service=true" >> $GITHUB_OUTPUT
-          echo "emotion-service=true" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "🐳 Manual trigger - Building all service images"
+            echo "api-gateway=true" >> $GITHUB_OUTPUT
+            echo "auth-service=true" >> $GITHUB_OUTPUT
+            echo "emotion-service=true" >> $GITHUB_OUTPUT
+          else
+            # Get changed files from the merged PR
+            echo "🔍 Detecting changed services in PR..."
+            
+            # Get the merge commit's diff
+            CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
+            
+            # Check which services changed
+            if echo "$CHANGED_FILES" | grep -q '^services/api-gateway/'; then
+              echo "api-gateway=true" >> $GITHUB_OUTPUT
+              echo "✅ API Gateway changed"
+            else
+              echo "api-gateway=false" >> $GITHUB_OUTPUT
+              echo "⏭️ API Gateway unchanged"
+            fi
+            
+            if echo "$CHANGED_FILES" | grep -q '^services/auth-service/'; then
+              echo "auth-service=true" >> $GITHUB_OUTPUT
+              echo "✅ Auth Service changed"
+            else
+              echo "auth-service=false" >> $GITHUB_OUTPUT
+              echo "⏭️ Auth Service unchanged"
+            fi
+            
+            if echo "$CHANGED_FILES" | grep -q '^services/emotion-service/'; then
+              echo "emotion-service=true" >> $GITHUB_OUTPUT
+              echo "✅ Emotion Service changed"
+            else
+              echo "emotion-service=false" >> $GITHUB_OUTPUT
+              echo "⏭️ Emotion Service unchanged"
+            fi
+          fi
 
   # Build and Push API Gateway
   build-api-gateway:
@@ -64,7 +99,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:${{ github.sha }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:v1.${{ github.run_number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
@@ -97,7 +132,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:${{ github.sha }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:v1.${{ github.run_number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
@@ -130,7 +165,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:${{ github.sha }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:v1.${{ github.run_number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
