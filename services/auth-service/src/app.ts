@@ -73,7 +73,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // ========== RUTAS ==========
-
 // Health Check - Ruta simple para verificar si el servicio está arriba
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).send('okey');
