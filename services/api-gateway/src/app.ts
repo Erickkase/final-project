@@ -23,11 +23,11 @@ declare global {
 // Helmet - Protege contra vulnerabilidades HTTP conocidas
 app.use(helmet());
 
-// CORS - Control de acceso entre dominios
+// CORS - Control de acceso entre dominios (habilitado para AWS)
 app.use(
   cors({
-    origin: config.corsOrigin,
-    credentials: true,
+    origin: '*', // Permite todas las IPs para despliegue en AWS
+    credentials: false, // Deshabilitado porque origin es '*'
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
   })
@@ -65,7 +65,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   
   next();
 });
-
 
 // Logger de solicitud
 app.use((req: Request, res: Response, next: NextFunction) => {
