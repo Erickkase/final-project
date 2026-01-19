@@ -1,0 +1,29 @@
+output "emotrack_alb_dns" {
+  description = "DNS del Load Balancer de EmoTrack"
+  value       = module.emotrack_microservices.alb_dns_name
+}
+
+output "emotrack_asg_name" {
+  description = "Nombre del Auto Scaling Group"
+  value       = module.emotrack_microservices.asg_name
+}
+
+output "api_gateway_url" {
+  description = "URL del API Gateway"
+  value       = "http://${module.emotrack_microservices.alb_dns_name}"
+}
+
+output "auth_service_url" {
+  description = "URL del Auth Service"
+  value       = "http://${module.emotrack_microservices.alb_dns_name}/auth"
+}
+
+output "emotion_service_url" {
+  description = "URL del Emotion Service"
+  value       = "http://${module.emotrack_microservices.alb_dns_name}/emotions"
+}
+
+output "cloudwatch_dashboard_url" {
+  description = "URL del dashboard de CloudWatch"
+  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${var.AWS_REGION}#dashboards:name=emotrack-dashboard"
+}
