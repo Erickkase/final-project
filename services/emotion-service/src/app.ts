@@ -55,7 +55,6 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms'));
 
 // ========== MIDDLEWARES PERSONALIZADOS ==========
-
 // Request ID - Asigna un ID único a cada solicitud
 app.use((req: Request, res: Response, next: NextFunction) => {
   req.requestId = req.headers['x-request-id'] as string || uuidv4();
