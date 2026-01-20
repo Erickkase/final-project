@@ -153,11 +153,6 @@ resource "aws_lb_target_group" "tg_report_service" {
   }
 }
 
-  tags = {
-    Name = "${var.name}-emotion-service-tg"
-  }
-}
-
 # ALB Listener (puerto 80)
 resource "aws_lb_listener" "listener" {
   load_balancer_arn = aws_lb.alb.arn
