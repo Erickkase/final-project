@@ -19,10 +19,10 @@ resource "aws_security_group" "sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Puertos de los microservicios (3000-3002)
+  # Puertos de los microservicios (3001-3003)
   ingress {
-    from_port   = 3000
-    to_port     = 3002
+    from_port   = 3001
+    to_port     = 3003
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -59,14 +59,14 @@ resource "aws_launch_template" "lt" {
   vpc_security_group_ids = [aws_security_group.sg.id]
   
   user_data = base64encode(templatefile("${path.module}/docker-compose.tpl", {
-    image_api_gateway    = var.image_api_gateway
-    port_api_gateway     = var.port_api_gateway
-    image_auth_service   = var.image_auth_service
-    port_auth_service    = var.port_auth_service
+    image_auth_service    = var.image_auth_service
+    port_auth_service     = var.port_auth_service
     image_emotion_service = var.image_emotion_service
-    port_emotion_service = var.port_emotion_service
-    tag                  = var.tag
-    jwt_secret           = var.jwt_secret
+    port_emotion_service  = var.port_emotion_service
+    image_report_service  = var.image_report_service
+    port_report_service   = var.port_report_service
+    tag                   = var.tag
+    jwt_secret            = var.jwt_secret
   }))
 
   tag_specifications {
@@ -87,27 +87,6 @@ resource "aws_lb" "alb" {
 
   tags = {
     Name = "${var.name}-alb"
-  }
-}
-
-# Target Group - API Gateway
-resource "aws_lb_target_group" "tg_api_gateway" {
-  name     = "${var.name}-api-gateway-tg"
-  port     = var.port_api_gateway
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
-  
-  health_check {
-    path                = "/health"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    matcher             = "200"
-  }
-
-  tags = {
-    Name = "${var.name}-api-gateway-tg"
   }
 }
 
@@ -153,16 +132,46 @@ resource "aws_lb_target_group" "tg_emotion_service" {
   }
 }
 
+# Target Group - Report Service
+resource "aws_lb_target_group" "tg_report_service" {
+  name     = "${var.name}-report-svc-tg"
+  port     = var.port_report_service
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+  
+  health_check {
+    path                = "/health"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    matcher             = "200"
+  }
+
+  tags = {
+    Name = "${var.name}-report-service-tg"
+  }
+}
+
+  tags = {
+    Name = "${var.name}-emotion-service-tg"
+  }
+}
+
 # ALB Listener (puerto 80)
 resource "aws_lb_listener" "listener" {
   load_balancer_arn = aws_lb.alb.arn
   port              = 80
   protocol          = "HTTP"
   
-  # Default action - API Gateway
+  # Default action - Retornar 404
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.tg_api_gateway.arn
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Not Found"
+      status_code  = "404"
+    }
   }
 }
 
@@ -200,18 +209,35 @@ resource "aws_lb_listener_rule" "rule_emotion" {
   }
 }
 
+# Listener Rule - Report Service
+resource "aws_lb_listener_rule" "rule_report" {
+  listener_arn = aws_lb_listener.listener.arn
+  priority     = 102
+  
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.tg_report_service.arn
+  }
+  
+  condition {
+    path_pattern {
+      values = ["/reports*"]
+    }
+  }
+}
+
 # Auto Scaling Group
 resource "aws_autoscaling_group" "asg" {
   name                 = "${var.name}-asg"
-  desired_capacity     = 2
-  max_size             = 4
-  min_size             = 2
+  desired_capacity     = 3
+  max_size             = 6
+  min_size             = 3
   vpc_zone_identifier  = [var.subnet1, var.subnet2]
   
   target_group_arns = [
-    aws_lb_target_group.tg_api_gateway.arn,
     aws_lb_target_group.tg_auth_service.arn,
-    aws_lb_target_group.tg_emotion_service.arn
+    aws_lb_target_group.tg_emotion_service.arn,
+    aws_lb_target_group.tg_report_service.arn
   ]
   
   launch_template {

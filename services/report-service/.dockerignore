@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+coverage
+.env
+.git
+.gitignore
+README.md
+dist
+__tests__
+*.test.ts
+jest.config.json
+.eslintrc.json

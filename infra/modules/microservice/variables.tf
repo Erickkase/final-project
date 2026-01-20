@@ -40,17 +40,6 @@ variable "docker_hub_username" {
   type        = string
 }
 
-variable "image_api_gateway" {
-  description = "Imagen Docker para API Gateway"
-  type        = string
-}
-
-variable "port_api_gateway" {
-  description = "Puerto para API Gateway"
-  type        = number
-  default     = 3000
-}
-
 variable "image_auth_service" {
   description = "Imagen Docker para Auth Service"
   type        = string
@@ -71,6 +60,17 @@ variable "port_emotion_service" {
   description = "Puerto para Emotion Service"
   type        = number
   default     = 3002
+}
+
+variable "image_report_service" {
+  description = "Imagen Docker para Report Service"
+  type        = string
+}
+
+variable "port_report_service" {
+  description = "Puerto para Report Service"
+  type        = number
+  default     = 3003
 }
 
 variable "tag" {
