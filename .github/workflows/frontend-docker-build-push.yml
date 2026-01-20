@@ -1,0 +1,252 @@
+name: Frontend Docker Build and Deploy
+
+on:
+  pull_request:
+    types:
+      - closed
+    paths:
+      - 'apps/frontend/**'
+      - '.github/workflows/frontend-docker-build-push.yml'
+    branches:
+      - qa
+  workflow_dispatch:
+    inputs:
+      deploy_environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'qa'
+        type: choice
+        options:
+          - qa
+          - production
+
+jobs:
+  build-and-push:
+    name: Build & Push Frontend Docker Image
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || 'qa' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-frontend
+          tags: |
+            type=raw,value=latest
+            type=raw,value=v1.${{ github.run_number }}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/frontend
+          file: ./apps/frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+          build-args: |
+            VITE_API_BASE_URL=${{ secrets.FRONTEND_API_URL }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+      - name: Image digest
+        run: echo "Image pushed with tags:${{ steps.meta.outputs.tags }}"
+
+  deploy-to-aws:
+    name: Deploy Frontend to AWS
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/qa' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || 'qa' }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var="AWS_REGION=${{ secrets.AWS_REGION }}" \
+            -var="AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -var="AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            -var="AWS_SESSION_TOKEN=${{ secrets.AWS_SESSION_TOKEN }}" \
+            -var="docker_hub_username=${{ secrets.DOCKER_HUB_USERNAME }}" \
+            -var="image_tag=v1.${{ github.run_number }}" \
+            -var="jwt_secret=${{ secrets.JWT_SECRET }}" \
+            -var="vpc_id=${{ secrets.VPC_ID }}" \
+            -var="subnet1=${{ secrets.SUBNET1 }}" \
+            -var="subnet2=${{ secrets.SUBNET2 }}" \
+            -var="BRANCH_NAME=qa" \
+            -out=tfplan
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve tfplan
+
+      - name: Get ALB DNS
+        id: alb-dns
+        run: |
+          ALB_DNS=$(terraform output -raw alb_dns_name)
+          echo "alb_dns=$ALB_DNS" >> $GITHUB_OUTPUT
+          echo "🌐 ALB DNS: $ALB_DNS"
+
+      - name: Get ASG Name
+        id: asg-name
+        run: |
+          ASG_NAME=$(terraform output -raw asg_name)
+          echo "asg_name=$ASG_NAME" >> $GITHUB_OUTPUT
+          echo "📦 ASG Name: $ASG_NAME"
+
+  refresh-instances:
+    name: Refresh ASG Instances
+    runs-on: ubuntu-latest
+    needs: deploy-to-aws
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get ASG Name from Terraform
+        id: get-asg
+        working-directory: infra
+        run: |
+          terraform init
+          ASG_NAME=$(terraform output -raw asg_name)
+          echo "asg_name=$ASG_NAME" >> $GITHUB_OUTPUT
+          echo "ASG Name: $ASG_NAME"
+
+      - name: Start Instance Refresh
+        run: |
+          echo "Starting instance refresh for ASG: ${{ steps.get-asg.outputs.asg_name }}"
+          
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name ${{ steps.get-asg.outputs.asg_name }} \
+            --preferences '{
+              "MinHealthyPercentage": 50,
+              "InstanceWarmup": 300,
+              "CheckpointPercentages": [50, 100],
+              "CheckpointDelay": 300
+            }' \
+            --query 'InstanceRefreshId' \
+            --output text)
+          
+          echo "Instance refresh started with ID: $REFRESH_ID"
+          echo "refresh_id=$REFRESH_ID" >> $GITHUB_OUTPUT
+
+      - name: Wait for Instance Refresh
+        run: |
+          echo "Waiting for instance refresh to complete..."
+          
+          while true; do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name ${{ steps.get-asg.outputs.asg_name }} \
+              --query 'InstanceRefreshes[0].Status' \
+              --output text)
+            
+            echo "Current status: $STATUS"
+            
+            if [ "$STATUS" = "Successful" ]; then
+              echo "✅ Instance refresh completed successfully!"
+              break
+            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ]; then
+              echo "❌ Instance refresh failed with status: $STATUS"
+              exit 1
+            fi
+            
+            sleep 30
+          done
+
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-to-aws, refresh-instances]
+    if: always()
+    steps:
+      - name: Print Deployment Summary
+        run: |
+          echo "## 🚀 Frontend Deployment Summary"
+          echo ""
+          echo "| Stage | Status |"
+          echo "|-------|--------|"
+          echo "| Build & Push | ${{ needs.build-and-push.result }} |"
+          echo "| Deploy to AWS | ${{ needs.deploy-to-aws.result }} |"
+          echo "| Refresh Instances | ${{ needs.refresh-instances.result }} |"
+          echo ""
+          echo "### 📦 Docker Image"
+          echo "- Repository: ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-frontend"
+          echo "- Tag: v1.${{ github.run_number }}"
+          echo ""
+          echo "### 🔗 Configuration"
+          echo "- API Base URL: ${{ secrets.FRONTEND_API_URL }}"
+          echo ""
+          echo "### 🌐 Access"
+          echo "Frontend will be available at your ALB DNS after deployment completes"
+          echo ""
+
+      - name: Check for failures
+        if: |
+          needs.build-and-push.result == 'failure' ||
+          needs.deploy-to-aws.result == 'failure' ||
+          needs.refresh-instances.result == 'failure'
+        run: |
+          echo "❌ Frontend deployment failed. Please check the logs."
+          exit 1
+
+      - name: Success
+        if: |
+          needs.build-and-push.result == 'success' &&
+          needs.deploy-to-aws.result == 'success' &&
+          needs.refresh-instances.result == 'success'
+        run: |
+          echo "✅ Frontend deployed successfully to AWS!"
+          echo "🎉 New instances are running with the latest frontend code"

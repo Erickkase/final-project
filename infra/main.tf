@@ -5,7 +5,7 @@ provider "aws" {
   token      = var.AWS_SESSION_TOKEN
 }
 
-# Módulo para los microservicios de EmoTrack
+# Module for EmoTrack microservices
 module "emotrack_microservices" {
   source               = "./modules/microservice"
   name                 = "emotrack"
@@ -16,6 +16,8 @@ module "emotrack_microservices" {
   port_emotion_service = 3002
   image_report_service = "${var.docker_hub_username}/emotrack-report-service"
   port_report_service  = 3003
+  image_frontend       = "${var.docker_hub_username}/emotrack-frontend"
+  port_frontend        = 80
   tag                  = var.image_tag
   branch               = var.BRANCH_NAME
   jwt_secret           = var.jwt_secret

@@ -16,7 +16,7 @@ JWT_SECRET=${jwt_secret}
 NODE_ENV=production
 EOF
 
-# Crear docker-compose.yml para los 3 microservicios
+# Create docker-compose.yml for all microservices and frontend
 cat <<'EOL' > /home/ubuntu/docker-compose.yml
 version: '3.8'
 
@@ -75,6 +75,21 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  frontend:
+    image: ${image_frontend}:${tag}
+    container_name: frontend
+    ports:
+      - "${port_frontend}:80"
+    environment:
+      - API_BASE_URL=http://$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 EOL
 
 # Iniciar Docker y habilitar en el arranque
@@ -96,4 +111,4 @@ sleep 10
 docker-compose ps
 docker-compose logs
 
-echo "✅ EmoTrack microservices deployment completed!"
+echo "EmoTrack deployment completed successfully!"
