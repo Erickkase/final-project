@@ -199,23 +199,23 @@ jobs:
         run: |
           echo "## 📦 Docker Hub Images"
           echo ""
-          echo "API Gateway:"
-          echo "  - ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:latest"
-          echo "  - ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:${{ github.sha }}"
-          echo ""
           echo "Auth Service:"
           echo "  - ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:latest"
-          echo "  - ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:${{ github.sha }}"
+          echo "  - ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:v1.${{ github.run_number }}"
           echo ""
           echo "Emotion Service:"
           echo "  - ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:latest"
-          echo "  - ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:${{ github.sha }}"
+          echo "  - ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:v1.${{ github.run_number }}"
+          echo ""
+          echo "Report Service:"
+          echo "  - ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-report-service:latest"
+          echo "  - ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-report-service:v1.${{ github.run_number }}"
 
       - name: Check for failures
         if: |
-          needs.build-api-gateway.result == 'failure' ||
           needs.build-auth-service.result == 'failure' ||
-          needs.build-emotion-service.result == 'failure'
+          needs.build-emotion-service.result == 'failure' ||
+          needs.build-report-service.result == 'failure'
         run: |
           echo "❌ Some builds failed. Please review the logs."
 
@@ -223,14 +223,14 @@ jobs:
   terraform-deploy:
     name: Deploy to AWS
     runs-on: ubuntu-latest
-    needs: [build-summary, detect-changes, build-api-gateway, build-auth-service, build-emotion-service]
+    needs: [build-summary, detect-changes, build-auth-service, build-emotion-service, build-report-service]
     if: |
       always() &&
       (github.ref == 'refs/heads/qa' || github.ref == 'refs/heads/main') &&
       (
-        needs.build-api-gateway.result == 'success' ||
         needs.build-auth-service.result == 'success' ||
-        needs.build-emotion-service.result == 'success'
+        needs.build-emotion-service.result == 'success' ||
+        needs.build-report-service.result == 'success'
       )
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -240,8 +240,6 @@ jobs:
       run:
         shell: bash
         working-directory: ./infra
-    outputs:
-      need_refresh: ${{ steps.set-flag.outputs.need_refresh }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -291,7 +289,6 @@ jobs:
       - name: Apply Terraform
         id: apply-tf
         run: |
-          set +e
           terraform apply -auto-approve \
             -var="AWS_REGION=${{ secrets.AWS_REGION }}" \
             -var="AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
@@ -304,20 +301,8 @@ jobs:
             -var="vpc_id=${{ secrets.VPC_ID }}" \
             -var="subnet1=${{ secrets.SUBNET1 }}" \
             -var="subnet2=${{ secrets.SUBNET2 }}"
-          echo $? > tf_exit_code.txt
-
-      - name: Set refresh flag
-        id: set-flag
-        run: |
-          code=$(cat tf_exit_code.txt)
-          if [ "$code" != "0" ]; then
-            echo "need_refresh=true" >> $GITHUB_OUTPUT
-          else
-            echo "need_refresh=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Show Terraform Outputs
-        if: steps.set-flag.outputs.need_refresh == 'false'
         run: |
           echo "✅ Terraform deployment successful!"
           echo ""
@@ -329,7 +314,7 @@ jobs:
     name: Refresh ASG
     runs-on: ubuntu-latest
     needs: terraform-deploy
-    if: needs.terraform-deploy.outputs.need_refresh == 'true'
+    if: success()
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
