@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Layout } from '@/components/Layout';
 import { reportService, EmotionSummary, EmotionTrend } from '@/services/reportService';
 import { emotionService, EmotionStats } from '@/services/emotionService';
@@ -19,7 +19,7 @@ export const Dashboard = () => {
   const [error, setError] = useState('');
   const { user } = useAuth();
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const [summaryData, trend15Data, trend30Data, statsData] = await Promise.all([
@@ -38,11 +38,11 @@ export const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [loadDashboardData]);
 
   const getEmotionPieData = () => {
     if (!summary) return [];
