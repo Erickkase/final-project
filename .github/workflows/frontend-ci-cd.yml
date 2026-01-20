@@ -134,3 +134,60 @@ jobs:
           needs.type-check.result == 'success'
         run: |
           echo "✅ All frontend checks passed!"
+
+  create-pull-request:
+    name: Create Pull Request to QA
+    runs-on: ubuntu-latest
+    needs: test-summary
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/dev' &&
+      needs.test-summary.result == 'success'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: dev
+          base: qa
+          title: '🚀 Frontend: Deploy to QA'
+          body: |
+            ## 🎨 Frontend Deployment to QA
+            
+            ### ✅ All CI Checks Passed
+            - ✅ Lint passed
+            - ✅ Build successful
+            - ✅ TypeScript type check passed
+            
+            ### 📦 Changes
+            This PR contains frontend changes that have passed all quality checks and are ready for QA deployment.
+            
+            ### 🚀 What happens after merge?
+            - Docker image will be built with tag `v1.${{ github.run_number }}`
+            - Image will be pushed to Docker Hub
+            - Terraform will deploy to AWS QA environment
+            - ASG instances will be refreshed for zero-downtime deployment
+            
+            ### 🔗 Related Workflow
+            - **CI Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
+            ---
+            *Auto-generated PR after successful CI checks*
+          labels: |
+            frontend
+            qa
+            auto-deploy
+          draft: false
+
+      - name: PR Created
+        run: |
+          echo "✅ Pull Request created successfully!"
+          echo "🔗 PR will trigger Docker build and AWS deployment when merged to qa"
