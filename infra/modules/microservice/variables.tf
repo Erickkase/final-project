@@ -73,17 +73,6 @@ variable "port_report_service" {
   default     = 3003
 }
 
-variable "image_frontend" {
-  description = "Imagen Docker para Frontend"
-  type        = string
-}
-
-variable "port_frontend" {
-  description = "Puerto para Frontend"
-  type        = number
-  default     = 80
-}
-
 variable "tag" {
   description = "Tag de Docker para todas las imágenes"
   type        = string
