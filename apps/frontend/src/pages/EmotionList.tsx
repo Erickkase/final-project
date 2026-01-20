@@ -20,8 +20,9 @@ export const EmotionList = () => {
       setLoading(true);
       const data = await emotionService.getEmotions(50, 0);
       setEmotions(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load emotions');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || 'Failed to load emotions');
     } finally {
       setLoading(false);
     }
@@ -33,8 +34,9 @@ export const EmotionList = () => {
     try {
       await emotionService.deleteEmotion(emotionId);
       setEmotions(emotions.filter(e => e.emotionId !== emotionId));
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete emotion');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      alert(error.response?.data?.message || 'Failed to delete emotion');
     }
   };
 

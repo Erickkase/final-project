@@ -19,10 +19,6 @@ export const Dashboard = () => {
   const [error, setError] = useState('');
   const { user } = useAuth();
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
   const loadDashboardData = async () => {
     try {
       setLoading(true);
@@ -36,12 +32,17 @@ export const Dashboard = () => {
       setTrend15(trend15Data);
       setTrend30(trend30Data);
       setStats(statsData);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load dashboard data');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
   const getEmotionPieData = () => {
     if (!summary) return [];
