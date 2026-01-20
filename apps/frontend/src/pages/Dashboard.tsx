@@ -5,7 +5,7 @@ import { emotionService, EmotionStats } from '@/services/emotionService';
 import { useAuth } from '@/contexts/AuthContext';
 import { BarChart3, TrendingUp, Heart, Activity } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 
 const COLORS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#ef4444', '#10b981'];
 

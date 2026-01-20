@@ -65,6 +65,8 @@ resource "aws_launch_template" "lt" {
     port_emotion_service  = var.port_emotion_service
     image_report_service  = var.image_report_service
     port_report_service   = var.port_report_service
+    image_frontend        = var.image_frontend
+    port_frontend         = var.port_frontend
     tag                   = var.tag
     jwt_secret            = var.jwt_secret
   }))
@@ -153,20 +155,37 @@ resource "aws_lb_target_group" "tg_report_service" {
   }
 }
 
+# Target Group - Frontend
+resource "aws_lb_target_group" "tg_frontend" {
+  name     = "${var.name}-frontend-tg"
+  port     = var.port_frontend
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+  
+  health_check {
+    path                = "/health"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    matcher             = "200"
+  }
+
+  tags = {
+    Name = "${var.name}-frontend-tg"
+  }
+}
+
 # ALB Listener (puerto 80)
 resource "aws_lb_listener" "listener" {
   load_balancer_arn = aws_lb.alb.arn
   port              = 80
   protocol          = "HTTP"
   
-  # Default action - Retornar 404
+  # Default action - Forward to frontend (SPA)
   default_action {
-    type = "fixed-response"
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "Not Found"
-      status_code  = "404"
-    }
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.tg_frontend.arn
   }
 }
 
@@ -232,7 +251,8 @@ resource "aws_autoscaling_group" "asg" {
   target_group_arns = [
     aws_lb_target_group.tg_auth_service.arn,
     aws_lb_target_group.tg_emotion_service.arn,
-    aws_lb_target_group.tg_report_service.arn
+    aws_lb_target_group.tg_report_service.arn,
+    aws_lb_target_group.tg_frontend.arn
   ]
   
   launch_template {
