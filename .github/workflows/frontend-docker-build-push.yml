@@ -175,24 +175,46 @@ jobs:
 
       - name: Get Frontend ALB DNS
         id: alb-dns
+        continue-on-error: true
         run: |
-          FRONTEND_ALB_DNS=$(terraform output -raw frontend_alb_dns)
-          echo "frontend_alb_dns=$FRONTEND_ALB_DNS" >> $GITHUB_OUTPUT
-          echo "🌐 Frontend ALB DNS: $FRONTEND_ALB_DNS"
+          if FRONTEND_ALB_DNS=$(terraform output -raw frontend_alb_dns 2>/dev/null); then
+            echo "frontend_alb_dns=$FRONTEND_ALB_DNS" >> $GITHUB_OUTPUT
+            echo "🌐 Frontend ALB DNS: $FRONTEND_ALB_DNS"
+          else
+            echo "frontend_alb_dns=pending" >> $GITHUB_OUTPUT
+            echo "⚠️ Frontend ALB DNS not available yet"
+          fi
 
       - name: Get Frontend ASG Name
         id: asg-name
+        continue-on-error: true
         run: |
-          FRONTEND_ASG_NAME=$(terraform output -raw frontend_asg_name)
-          echo "frontend_asg_name=$FRONTEND_ASG_NAME" >> $GITHUB_OUTPUT
-          echo "📦 Frontend ASG Name: $FRONTEND_ASG_NAME"
+          if FRONTEND_ASG_NAME=$(terraform output -raw frontend_asg_name 2>/dev/null); then
+            echo "frontend_asg_name=$FRONTEND_ASG_NAME" >> $GITHUB_OUTPUT
+            echo "📦 Frontend ASG Name: $FRONTEND_ASG_NAME"
+          else
+            echo "frontend_asg_name=pending" >> $GITHUB_OUTPUT
+            echo "⚠️ Frontend ASG Name not available yet"
+          fi
           
       - name: Get Backend API URL
         id: backend-url
+        continue-on-error: true
         run: |
-          BACKEND_URL=$(terraform output -raw api_gateway_url)
-          echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
-          echo "🔗 Backend API URL: $BACKEND_URL"
+          if BACKEND_URL=$(terraform output -raw api_gateway_url 2>/dev/null); then
+            echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+            echo "🔗 Backend API URL: $BACKEND_URL"
+          else
+            # Try to get backend ALB DNS directly
+            if BACKEND_ALB=$(terraform output -raw emotrack_alb_dns 2>/dev/null); then
+              BACKEND_URL="http://$BACKEND_ALB"
+              echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+              echo "🔗 Backend API URL: $BACKEND_URL"
+            else
+              echo "backend_url=http://backend-not-deployed" >> $GITHUB_OUTPUT
+              echo "⚠️ Backend not deployed yet, using placeholder"
+            fi
+          fi
 
   refresh-instances:
     name: Refresh ASG Instances
