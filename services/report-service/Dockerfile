@@ -7,8 +7,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Instalar dependencias
-RUN npm ci --only=production && npm cache clean --force
+# Instalar dependencias (incluye devDependencies para compilar)
+RUN npm ci && npm cache clean --force
 
 # Copiar código fuente
 COPY src ./src
@@ -21,10 +21,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copiar solo lo necesario desde builder
-COPY --from=builder /app/node_modules ./node_modules
+# Copiar package files
+COPY package*.json ./
+
+# Instalar solo dependencias de producción
+RUN npm ci --only=production && npm cache clean --force
+
+# Copiar dist compilado desde builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
 
 # Exponer puerto
 EXPOSE 3003
