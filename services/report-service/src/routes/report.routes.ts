@@ -5,7 +5,7 @@ import { verifyToken } from '../middleware/auth.middleware';
 const router = Router();
 const reportService = new ReportService();
 
-// Obtener tendencia emocional de un usuario
+// Get user emotion trend
 router.get('/trend/:userId', verifyToken, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
@@ -23,7 +23,7 @@ router.get('/trend/:userId', verifyToken, async (req: Request, res: Response) =>
   }
 });
 
-// Obtener resumen emocional de un usuario
+// Get user emotion summary
 router.get('/summary/:userId', verifyToken, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;

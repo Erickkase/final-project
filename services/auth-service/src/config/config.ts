@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const config = {
-  // Servidor
+  // Server
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3001', 10),
   serviceName: process.env.SERVICE_NAME || 'auth-service',
@@ -16,11 +16,11 @@ export const config = {
     refreshExpiration: process.env.JWT_REFRESH_EXPIRATION || '30d',
   },
 
-  // Seguridad
+  // Security
   corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
   bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '10', 10),
 
-  // Base de Datos
+  // Database
   database: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),

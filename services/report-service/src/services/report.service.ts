@@ -36,14 +36,14 @@ export class ReportService {
     this.emotionServiceUrl = config.emotionServiceUrl;
   }
 
-  // Obtener tendencia emocional de un usuario
+  // Get user emotion trend
   async getEmotionTrend(userId: string, days: number = 15): Promise<EmotionTrend> {
     try {
-      // Obtener emociones del usuario desde el servicio de emociones
+      // Fetch user emotions from emotion service
       const response = await axios.get(`${this.emotionServiceUrl}/emotions/user/${userId}`);
       const emotions: Emotion[] = response.data;
 
-      // Filtrar emociones por el período de días
+      // Filter emotions by time period
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - days);
       
@@ -52,7 +52,7 @@ export class ReportService {
         return emotionDate >= cutoffDate;
       });
 
-      // Calcular estadísticas
+      // Calculate statistics
       const emotionCounts: Record<string, number> = {};
       let totalIntensity = 0;
 
@@ -61,7 +61,7 @@ export class ReportService {
         totalIntensity += emotion.intensity;
       });
 
-      // Encontrar emoción más frecuente
+      // Find most frequent emotion
       let mostFrequentEmotion = '';
       let maxCount = 0;
       Object.entries(emotionCounts).forEach(([emotion, count]) => {
@@ -71,7 +71,7 @@ export class ReportService {
         }
       });
 
-      // Calcular porcentajes
+      // Calculate percentages
       const emotionPercentages: Record<string, number> = {};
       Object.entries(emotionCounts).forEach(([emotion, count]) => {
         emotionPercentages[emotion] = (count / filteredEmotions.length) * 100;
@@ -89,7 +89,7 @@ export class ReportService {
       };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
-        // Usuario sin emociones registradas
+        // User has no registered emotions
         return {
           userId,
           period: `${days} days`,
@@ -105,19 +105,19 @@ export class ReportService {
     }
   }
 
-  // Obtener resumen emocional de un usuario
+  // Get user emotion summary
   async getEmotionSummary(userId: string): Promise<EmotionSummary> {
     try {
       const response = await axios.get(`${this.emotionServiceUrl}/emotions/user/${userId}`);
       const emotions: Emotion[] = response.data;
 
-      // Calcular distribución de emociones
+      // Calculate emotion distribution
       const emotionDistribution: Record<string, number> = {};
       emotions.forEach(emotion => {
         emotionDistribution[emotion.emotion] = (emotionDistribution[emotion.emotion] || 0) + 1;
       });
 
-      // Ordenar emociones por timestamp
+      // Sort emotions by timestamp
       const sortedEmotions = [...emotions].sort((a, b) => 
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );

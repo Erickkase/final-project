@@ -5,7 +5,7 @@ import passwordService from '../services/password.service';
 
 const router = Router();
 
-// Interfaz para usuario (simulado sin BD por ahora)
+// User interface (simulated without database)
 interface User {
   userId: string;
   email: string;
@@ -14,47 +14,47 @@ interface User {
   createdAt: Date;
 }
 
-// Simulación de base de datos en memoria
+// In-memory database simulation
 const users: Map<string, User> = new Map();
 const refreshTokens: Set<string> = new Set();
 
-// ========== POST /login ==========
+// POST /login
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body;
 
-    // Validación de entrada
+    // Input validation
     if (!email || !password) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'Email y contraseña son requeridos',
+        message: 'Email and password are required',
         requestId: req.requestId,
       });
     }
 
-    // Buscar usuario (simulado)
+    // Find user (simulated)
     const user = Array.from(users.values()).find((u) => u.email === email);
 
     if (!user) {
       return res.status(401).json({
         statusCode: 401,
-        message: 'Credenciales inválidas',
+        message: 'Invalid credentials',
         requestId: req.requestId,
       });
     }
 
-    // Verificar contraseña
+    // Verify password
     const isPasswordValid = await passwordService.compare(password, user.password);
 
     if (!isPasswordValid) {
       return res.status(401).json({
         statusCode: 401,
-        message: 'Credenciales inválidas',
+        message: 'Invalid credentials',
         requestId: req.requestId,
       });
     }
 
-    // Generar tokens
+    // Generate tokens
     const token = jwtService.generateToken({
       userId: user.userId,
       email: user.email,
@@ -66,7 +66,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Sesión iniciada exitosamente',
+      message: 'Login successful',
       data: {
         token,
         refreshToken,
@@ -83,44 +83,44 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
-// ========== POST /register ==========
+// POST /register
 router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password, name, role } = req.body;
 
-    // Validación de entrada
+    // Input validation
     if (!email || !password || !name) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'Email, contraseña y nombre son requeridos',
+        message: 'Email, password and name are required',
         requestId: req.requestId,
       });
     }
 
-    // Validar si el usuario ya existe
+    // Check if user already exists
     const existingUser = Array.from(users.values()).find((u) => u.email === email);
 
     if (existingUser) {
       return res.status(409).json({
         statusCode: 409,
-        message: 'El email ya está registrado',
+        message: 'Email already registered',
         requestId: req.requestId,
       });
     }
 
-    // Validar fuerza de contraseña
+    // Validate password strength
     const passwordValidation = passwordService.validateStrength(password);
 
     if (!passwordValidation.valid) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'Contraseña débil',
+        message: 'Weak password',
         errors: passwordValidation.errors,
         requestId: req.requestId,
       });
     }
 
-    // Crear usuario
+    // Create user
     const userId = uuidv4();
     const hashedPassword = await passwordService.hash(password);
 
@@ -134,7 +134,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
 
     users.set(userId, newUser);
 
-    // Generar tokens
+    // Generate tokens
     const token = jwtService.generateToken({
       userId: newUser.userId,
       email: newUser.email,
@@ -146,7 +146,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
 
     return res.status(201).json({
       statusCode: 201,
-      message: 'Usuario registrado exitosamente',
+      message: 'User registered successfully',
       data: {
         token,
         refreshToken,
@@ -163,7 +163,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
   }
 });
 
-// ========== GET /verify ==========
+// GET /verify
 router.get('/verify', (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
@@ -172,7 +172,7 @@ router.get('/verify', (req: Request, res: Response, next: NextFunction) => {
     if (!token) {
       return res.status(401).json({
         statusCode: 401,
-        message: 'Token no proporcionado',
+        message: 'Token not provided',
         requestId: req.requestId,
       });
     }
@@ -182,14 +182,14 @@ router.get('/verify', (req: Request, res: Response, next: NextFunction) => {
     if (!payload) {
       return res.status(401).json({
         statusCode: 401,
-        message: 'Token inválido o expirado',
+        message: 'Invalid or expired token',
         requestId: req.requestId,
       });
     }
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Token válido',
+      message: 'Valid token',
       data: {
         valid: true,
         payload,
@@ -201,7 +201,7 @@ router.get('/verify', (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// ========== POST /refresh ==========
+// POST /refresh
 router.post('/refresh', (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.body;
@@ -209,16 +209,16 @@ router.post('/refresh', (req: Request, res: Response, next: NextFunction) => {
     if (!refreshToken) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'Refresh token requerido',
+        message: 'Refresh token required',
         requestId: req.requestId,
       });
     }
 
-    // Verificar que el refresh token sea válido
+    // Verify refresh token is valid
     if (!refreshTokens.has(refreshToken)) {
       return res.status(401).json({
         statusCode: 401,
-        message: 'Refresh token inválido',
+        message: 'Invalid refresh token',
         requestId: req.requestId,
       });
     }
@@ -229,23 +229,23 @@ router.post('/refresh', (req: Request, res: Response, next: NextFunction) => {
       refreshTokens.delete(refreshToken);
       return res.status(401).json({
         statusCode: 401,
-        message: 'Refresh token expirado',
+        message: 'Expired refresh token',
         requestId: req.requestId,
       });
     }
 
-    // Obtener usuario
+    // Get user
     const user = users.get(payload.userId);
 
     if (!user) {
       return res.status(404).json({
         statusCode: 404,
-        message: 'Usuario no encontrado',
+        message: 'User not found',
         requestId: req.requestId,
       });
     }
 
-    // Generar nuevo token
+    // Generate new token
     const newToken = jwtService.generateToken({
       userId: user.userId,
       email: user.email,
@@ -254,13 +254,13 @@ router.post('/refresh', (req: Request, res: Response, next: NextFunction) => {
 
     const newRefreshToken = jwtService.generateRefreshToken(user.userId);
     
-    // Invalidad el refresh token anterior
+    // Invalidate previous refresh token
     refreshTokens.delete(refreshToken);
     refreshTokens.add(newRefreshToken);
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Token refrescado exitosamente',
+      message: 'Token refreshed successfully',
       data: {
         token: newToken,
         refreshToken: newRefreshToken,
@@ -272,7 +272,7 @@ router.post('/refresh', (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// ========== POST /logout ==========
+// POST /logout
 router.post('/logout', (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.body;
@@ -283,7 +283,7 @@ router.post('/logout', (req: Request, res: Response, next: NextFunction) => {
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Sesión cerrada exitosamente',
+      message: 'Logout successful',
       requestId: req.requestId,
     });
   } catch (error) {

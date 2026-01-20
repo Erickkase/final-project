@@ -38,30 +38,30 @@ describe('Password Service', () => {
   it('should require minimum 8 characters', () => {
     const result = passwordService.validateStrength('Short1!');
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e: string) => e.includes('8 caracteres'))).toBe(true);
+    expect(result.errors.some((e: string) => e.includes('8 characters'))).toBe(true);
   });
 
   it('should require uppercase letter', () => {
     const result = passwordService.validateStrength('password123!');
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e: string) => e.includes('mayúscula'))).toBe(true);
+    expect(result.errors.some((e: string) => e.includes('uppercase'))).toBe(true);
   });
 
   it('should require lowercase letter', () => {
     const result = passwordService.validateStrength('PASSWORD123!');
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e: string) => e.includes('minúscula'))).toBe(true);
+    expect(result.errors.some((e: string) => e.includes('lowercase'))).toBe(true);
   });
 
   it('should require number', () => {
     const result = passwordService.validateStrength('PasswordSpecial!');
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e: string) => e.includes('número'))).toBe(true);
+    expect(result.errors.some((e: string) => e.includes('number'))).toBe(true);
   });
 
   it('should require special character', () => {
     const result = passwordService.validateStrength('Password123');
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e: string) => e.includes('especial'))).toBe(true);
+    expect(result.errors.some((e: string) => e.includes('special'))).toBe(true);
   });
 });

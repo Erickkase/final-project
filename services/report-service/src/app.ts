@@ -9,10 +9,10 @@ import healthRoutes from './routes/health.routes';
 
 const app = express();
 
-// Middleware de seguridad
+// Security middleware
 app.use(helmet());
 
-// CORS - Permitir todas las IPs (como los otros servicios)
+// CORS - Allow all IPs (like other services)
 app.use(cors({
   origin: '*',
   credentials: false,
@@ -20,9 +20,9 @@ app.use(cors({
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // límite de 100 requests por ventana
-  message: 'Demasiadas solicitudes desde esta IP, intente de nuevo más tarde.',
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit to 100 requests per window
+  message: 'Too many requests from this IP, please try again later.',
 });
 app.use(limiter);
 
@@ -37,16 +37,16 @@ if (config.nodeEnv === 'development') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rutas
+// Routes
 app.use('/health', healthRoutes);
 app.use('/reports', reportRoutes);
 
-// Manejo de rutas no encontradas
+// Handle routes not found
 app.use((req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Manejo de errores
+// Error handling
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error('Error:', err);
   res.status(500).json({ 
