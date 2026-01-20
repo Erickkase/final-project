@@ -3,12 +3,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const config = {
-  // Servidor
+  // Server
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3003', 10),
   serviceName: process.env.SERVICE_NAME || 'emotion-service',
 
-  // Base de Datos
+  // Database
   database: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),
@@ -18,7 +18,7 @@ export const config = {
     ssl: process.env.DB_SSL === 'true',
   },
 
-  // Seguridad
+  // Security
   corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
   authServiceUrl: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
 
@@ -31,7 +31,7 @@ export const config = {
   // Logging
   logLevel: process.env.LOG_LEVEL || 'info',
 
-  // Emociones
+  // Emotions
   allowedEmotions: (process.env.ALLOWED_EMOTIONS || 'alegria,tristeza,miedo,ira,disguto').split(','),
 
   // Timeouts

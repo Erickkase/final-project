@@ -4,14 +4,14 @@ import config from '../config/config';
 
 const router = Router();
 
-// Middleware para validar que el usuario esté autenticado
+// Middleware to validate user authentication
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   const userId = req.headers['x-user-id'] as string;
 
   if (!userId) {
     return res.status(401).json({
       statusCode: 401,
-      message: 'Usuario no autenticado',
+      message: 'User not authenticated',
       requestId: req.requestId,
     });
   }
@@ -20,7 +20,7 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-// ========== GET /emotions ==========
+// GET /emotions
 router.get('/', requireAuth, (req: Request, res: Response, next: NextFunction) => {
   try {
     const limit = parseInt(req.query.limit as string) || 100;
@@ -30,7 +30,7 @@ router.get('/', requireAuth, (req: Request, res: Response, next: NextFunction) =
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Emociones obtenidas exitosamente',
+      message: 'Emotions retrieved successfully',
       data: {
         emotions,
         count: emotions.length,
@@ -42,7 +42,7 @@ router.get('/', requireAuth, (req: Request, res: Response, next: NextFunction) =
   }
 });
 
-// ========== GET /emotions/:emotionId ==========
+// GET /emotions/:emotionId
 router.get('/:emotionId', requireAuth, (req: Request, res: Response, next: NextFunction) => {
   try {
     const emotion = emotionService.getEmotionById(req.params.emotionId);
@@ -50,14 +50,14 @@ router.get('/:emotionId', requireAuth, (req: Request, res: Response, next: NextF
     if (!emotion || emotion.userId !== req.userId) {
       return res.status(404).json({
         statusCode: 404,
-        message: 'Emoción no encontrada',
+        message: 'Emotion not found',
         requestId: req.requestId,
       });
     }
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Emoción obtenida exitosamente',
+      message: 'Emotion retrieved successfully',
       data: { emotion },
       requestId: req.requestId,
     });
@@ -66,16 +66,16 @@ router.get('/:emotionId', requireAuth, (req: Request, res: Response, next: NextF
   }
 });
 
-// ========== POST /emotions ==========
+// POST /emotions
 router.post('/', requireAuth, (req: Request, res: Response, next: NextFunction) => {
   try {
     const { type, intensity, description, tags, location, weather, triggers, notes } = req.body;
 
-    // Validaciones
+    // Validations
     if (!type || !description) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'Tipo y descripción son requeridos',
+        message: 'Type and description are required',
         requestId: req.requestId,
       });
     }
@@ -83,7 +83,7 @@ router.post('/', requireAuth, (req: Request, res: Response, next: NextFunction) 
     if (!config.allowedEmotions.includes(type.toLowerCase())) {
       return res.status(400).json({
         statusCode: 400,
-        message: `Tipo de emoción no válido. Emociones permitidas: ${config.allowedEmotions.join(', ')}`,
+        message: `Invalid emotion type. Allowed emotions: ${config.allowedEmotions.join(', ')}`,
         requestId: req.requestId,
       });
     }
@@ -91,7 +91,7 @@ router.post('/', requireAuth, (req: Request, res: Response, next: NextFunction) 
     if (!intensity || intensity < 1 || intensity > 10) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'Intensidad debe estar entre 1 y 10',
+        message: 'Intensity must be between 1 and 10',
         requestId: req.requestId,
       });
     }
@@ -112,7 +112,7 @@ router.post('/', requireAuth, (req: Request, res: Response, next: NextFunction) 
 
     return res.status(201).json({
       statusCode: 201,
-      message: 'Emoción registrada exitosamente',
+      message: 'Emotion registered successfully',
       data: { emotion: newEmotion },
       requestId: req.requestId,
     });
@@ -121,16 +121,16 @@ router.post('/', requireAuth, (req: Request, res: Response, next: NextFunction) 
   }
 });
 
-// ========== PUT /emotions/:emotionId ==========
+// PUT /emotions/:emotionId
 router.put('/:emotionId', requireAuth, (req: Request, res: Response, next: NextFunction) => {
   try {
     const { type, intensity, description, tags, location, weather, triggers, notes } = req.body;
 
-    // Validaciones opcionales
+    // Optional validations
     if (type && !config.allowedEmotions.includes(type.toLowerCase())) {
       return res.status(400).json({
         statusCode: 400,
-        message: `Tipo de emoción no válido. Emociones permitidas: ${config.allowedEmotions.join(', ')}`,
+        message: `Invalid emotion type. Allowed emotions: ${config.allowedEmotions.join(', ')}`,
         requestId: req.requestId,
       });
     }
@@ -138,7 +138,7 @@ router.put('/:emotionId', requireAuth, (req: Request, res: Response, next: NextF
     if (intensity && (intensity < 1 || intensity > 10)) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'Intensidad debe estar entre 1 y 10',
+        message: 'Intensity must be between 1 and 10',
         requestId: req.requestId,
       });
     }
@@ -159,14 +159,14 @@ router.put('/:emotionId', requireAuth, (req: Request, res: Response, next: NextF
     if (!updatedEmotion) {
       return res.status(404).json({
         statusCode: 404,
-        message: 'Emoción no encontrada',
+        message: 'Emotion not found',
         requestId: req.requestId,
       });
     }
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Emoción actualizada exitosamente',
+      message: 'Emotion updated successfully',
       data: { emotion: updatedEmotion },
       requestId: req.requestId,
     });
@@ -175,7 +175,7 @@ router.put('/:emotionId', requireAuth, (req: Request, res: Response, next: NextF
   }
 });
 
-// ========== DELETE /emotions/:emotionId ==========
+// DELETE /emotions/:emotionId
 router.delete('/:emotionId', requireAuth, (req: Request, res: Response, next: NextFunction) => {
   try {
     const deleted = emotionService.deleteEmotion(req.params.emotionId, req.userId!);
@@ -183,14 +183,14 @@ router.delete('/:emotionId', requireAuth, (req: Request, res: Response, next: Ne
     if (!deleted) {
       return res.status(404).json({
         statusCode: 404,
-        message: 'Emoción no encontrada',
+        message: 'Emotion not found',
         requestId: req.requestId,
       });
     }
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Emoción eliminada exitosamente',
+      message: 'Emotion deleted successfully',
       requestId: req.requestId,
     });
   } catch (error) {
@@ -198,7 +198,7 @@ router.delete('/:emotionId', requireAuth, (req: Request, res: Response, next: Ne
   }
 });
 
-// ========== GET /emotions/user/:userId ==========
+// GET /emotions/user/:userId
 router.get('/user/:userId', (req: Request, res: Response, next: NextFunction) => {
   try {
     const limit = parseInt(req.query.limit as string) || 100;
@@ -208,7 +208,7 @@ router.get('/user/:userId', (req: Request, res: Response, next: NextFunction) =>
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Emociones del usuario obtenidas',
+      message: 'User emotions retrieved',
       data: {
         emotions,
         count: emotions.length,
@@ -220,7 +220,7 @@ router.get('/user/:userId', (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
-// ========== GET /emotions/stats/:userId ==========
+// GET /emotions/stats/:userId
 router.get('/stats/:userId', (req: Request, res: Response, next: NextFunction) => {
   try {
     const stats = emotionService.getEmotionStats(req.params.userId);
@@ -229,7 +229,7 @@ router.get('/stats/:userId', (req: Request, res: Response, next: NextFunction) =
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Estadísticas de emociones obtenidas',
+      message: 'Emotion statistics retrieved',
       data: {
         stats,
         averageIntensity: avgIntensity.toFixed(2),
@@ -243,7 +243,7 @@ router.get('/stats/:userId', (req: Request, res: Response, next: NextFunction) =
   }
 });
 
-// ========== GET /emotions/range/:userId ==========
+// GET /emotions/range/:userId
 router.get('/range/:userId', (req: Request, res: Response, next: NextFunction) => {
   try {
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : null;
@@ -252,7 +252,7 @@ router.get('/range/:userId', (req: Request, res: Response, next: NextFunction) =
     if (!startDate || !endDate) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'startDate y endDate son requeridos (formato ISO)',
+        message: 'startDate and endDate are required (ISO format)',
         requestId: req.requestId,
       });
     }
@@ -261,7 +261,7 @@ router.get('/range/:userId', (req: Request, res: Response, next: NextFunction) =
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Emociones en rango de fechas obtenidas',
+      message: 'Emotions in date range retrieved',
       data: {
         emotions,
         count: emotions.length,

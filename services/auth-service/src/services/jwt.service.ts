@@ -11,7 +11,7 @@ export interface TokenPayload {
 
 class JWTService {
   /**
-   * Genera un token JWT
+   * Generates a JWT token
    */
   generateToken(payload: Omit<TokenPayload, 'iat' | 'exp'>): string {
     const options: SignOptions = {
@@ -22,7 +22,7 @@ class JWTService {
   }
 
   /**
-   * Genera un refresh token
+   * Generates a refresh token
    */
   generateRefreshToken(userId: string): string {
     const options: SignOptions = {
@@ -33,7 +33,7 @@ class JWTService {
   }
 
   /**
-   * Verifica un token JWT
+   * Verifies a JWT token
    */
   verifyToken(token: string): TokenPayload | null {
     try {
@@ -48,7 +48,7 @@ class JWTService {
   }
 
   /**
-   * Verifica un refresh token
+   * Verifies a refresh token
    */
   verifyRefreshToken(token: string): { userId: string } | null {
     try {
@@ -63,7 +63,7 @@ class JWTService {
   }
 
   /**
-   * Decodifica un token sin verificar la firma (solo para obtener información)
+   * Decodes a token without verifying the signature (for information only)
    */
   decodeToken(token: string): TokenPayload | null {
     try {
@@ -76,7 +76,7 @@ class JWTService {
   }
 
   /**
-   * Extrae el token del header Authorization
+   * Extracts token from Authorization header
    */
   extractToken(authHeader: string | undefined): string | null {
     if (!authHeader) return null;

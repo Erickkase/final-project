@@ -3,56 +3,56 @@ import config from './config/config';
 
 const server = app.listen(config.port, () => {
   console.log(`
-╔════════════════════════════════════════════════════════╗
-║     😊 Emotion Service - EmoTrack Platform 😊         ║
-╚════════════════════════════════════════════════════════╝
+========================================================
+     Emotion Service - EmoTrack Platform
+========================================================
 
-📍 Servidor iniciado en: http://localhost:${config.port}
-🌍 Ambiente: ${config.nodeEnv}
-📦 Servicio: ${config.serviceName}
-🔐 CORS habilitado para: ${config.corsOrigin.join(', ')}
+Server started at: http://localhost:${config.port}
+Environment: ${config.nodeEnv}
+Service: ${config.serviceName}
+CORS enabled for: ${config.corsOrigin.join(', ')}
 
-Rutas disponibles:
-  ✅ /health - Health check
-  ✅ /api/v1/emotions - CRUD de emociones
-  ✅ /api/v1/emotions/user/:userId - Emociones del usuario
-  ✅ /api/v1/emotions/stats/:userId - Estadísticas
-  ✅ /api/v1/emotions/range/:userId - Rango de fechas
+Available routes:
+  /health - Health check
+  /api/v1/emotions - Emotions CRUD
+  /api/v1/emotions/user/:userId - User emotions
+  /api/v1/emotions/stats/:userId - Statistics
+  /api/v1/emotions/range/:userId - Date range query
 
-⚙️ Configuración:
-  - Emociones permitidas: ${config.allowedEmotions.join(', ')}
-  - Rate Limit: ${config.rateLimit.maxRequests} requests por ${config.rateLimit.windowMs}ms
-  - Base de datos: ${config.database.host}:${config.database.port}/${config.database.name}
+Configuration:
+  - Allowed emotions: ${config.allowedEmotions.join(', ')}
+  - Rate Limit: ${config.rateLimit.maxRequests} requests per ${config.rateLimit.windowMs}ms
+  - Database: ${config.database.host}:${config.database.port}/${config.database.name}
 
-Presiona Ctrl+C para detener el servidor
+Press Ctrl+C to stop the server
   `);
 });
 
-// Manejo de señales para shutdown graceful
+// Graceful shutdown handlers
 process.on('SIGTERM', () => {
-  console.log('📛 SIGTERM recibido. Cerrando servidor...');
+  console.log('SIGTERM signal received. Closing server...');
   server.close(() => {
-    console.log('✅ Servidor cerrado');
+    console.log('Server closed');
     process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
-  console.log('📛 SIGINT recibido. Cerrando servidor...');
+  console.log('SIGINT signal received. Closing server...');
   server.close(() => {
-    console.log('✅ Servidor cerrado');
+    console.log('Server closed');
     process.exit(0);
   });
 });
 
-// Manejo de errores no capturados
+// Error handlers
 process.on('uncaughtException', (err) => {
-  console.error('❌ Error no capturado:', err);
+  console.error('Uncaught exception:', err);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Promise rechazada sin manejar:', reason);
+  console.error('Unhandled promise rejection:', reason);
   process.exit(1);
 });
 

@@ -3,43 +3,43 @@ import config from '../config/config';
 
 class PasswordService {
   /**
-   * Encripta una contraseña
+   * Encrypts a password
    */
   async hash(password: string): Promise<string> {
     return bcryptjs.hash(password, config.bcryptRounds);
   }
 
   /**
-   * Compara una contraseña con su hash
+   * Compares a password with its hash
    */
   async compare(password: string, hash: string): Promise<boolean> {
     return bcryptjs.compare(password, hash);
   }
 
   /**
-   * Valida la fuerza de una contraseña
+   * Validates password strength
    */
   validateStrength(password: string): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     if (password.length < 8) {
-      errors.push('La contraseña debe tener al menos 8 caracteres');
+      errors.push('Password must be at least 8 characters long');
     }
 
     if (!/[A-Z]/.test(password)) {
-      errors.push('La contraseña debe contener al menos una letra mayúscula');
+      errors.push('Password must contain at least one uppercase letter');
     }
 
     if (!/[a-z]/.test(password)) {
-      errors.push('La contraseña debe contener al menos una letra minúscula');
+      errors.push('Password must contain at least one lowercase letter');
     }
 
     if (!/[0-9]/.test(password)) {
-      errors.push('La contraseña debe contener al menos un número');
+      errors.push('Password must contain at least one number');
     }
 
     if (!/[!@#$%^&*]/.test(password)) {
-      errors.push('La contraseña debe contener al menos un carácter especial (!@#$%^&*)');
+      errors.push('Password must contain at least one special character (!@#$%^&*)');
     }
 
     return {

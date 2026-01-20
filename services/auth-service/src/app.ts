@@ -8,7 +8,7 @@ import config from './config/config';
 
 const app = express();
 
-// Interfaces para request extendido
+// Extended request interface
 declare global {
   namespace Express {
     interface Request {
@@ -18,62 +18,63 @@ declare global {
   }
 }
 
-// ========== MIDDLEWARES DE SEGURIDAD ==========
+// Security middlewares
 
-// Helmet - Protege contra vulnerabilidades HTTP conocidas
+// Helmet - Protects against known HTTP vulnerabilities
 app.use(helmet());
 
-// CORS - Control de acceso entre dominios (habilitado para AWS)
+// CORS - Cross-origin resource sharing (enabled for AWS)
 app.use(
   cors({
-    origin: '*', // Permite todas las IPs para despliegue en AWS
-    credentials: false, // Deshabilitado porque origin es '*'
+    origin: '*', // Allow all IPs for AWS deployment
+    credentials: false, // Disabled because origin is '*'
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
   })
 );
 
-// Rate Limiting - Limita solicitudes por IP
+// Rate limiting - Limit requests per IP
 const limiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.maxRequests,
-  message: 'Demasiadas solicitudes desde esta IP, por favor intente más tarde.',
+  message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 app.use(limiter);
 
-// ========== MIDDLEWARES DE PARSEO ==========
+// Body parsing middlewares
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// ========== MIDDLEWARES DE LOGGING ==========
+// Logging middlewares
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms'));
 
-// ========== MIDDLEWARES PERSONALIZADOS ==========
+// Custom middlewares
 
-// Request ID - Asigna un ID único a cada solicitud
+// Request ID - Assigns unique ID to each request
 app.use((req: Request, res: Response, next: NextFunction) => {
   req.requestId = req.headers['x-request-id'] as string || uuidv4();
   req.startTime = Date.now();
 
-  // Agregar request ID a los headers de respuesta
+  // Add request ID to response headers
   res.setHeader('X-Request-ID', req.requestId);
 
   next();
 });
 
-// Logger de solicitud
+// Request logger
 app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`[${new Date().toISOString()}] ${req.requestId} ${req.method} ${req.url}`);
   next();
 });
 
-// ========== RUTAS ==========
-// Health Check - Ruta simple para verificar si el servicio está arriba
+// Routes
+
+// Health check - Simple route to verify service is up
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).send('okey');
 });
@@ -81,34 +82,34 @@ app.get('/health', (req: Request, res: Response) => {
 // API v1
 const apiV1 = express.Router();
 
-// Cargar rutas de autenticación
+// Load authentication routes
 const authRoutes = require('./routes/auth.routes').default || require('./routes/auth.routes');
 apiV1.use('/auth', authRoutes);
 
-// Montar rutas v1
+// Mount v1 routes
 app.use('/api/v1', apiV1);
 
-// ========== MANEJO DE ERRORES ==========
+// Error handling
 
-// Ruta no encontrada
+// Route not found
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     statusCode: 404,
-    message: 'Ruta no encontrada',
+    message: 'Route not found',
     path: req.url,
     timestamp: new Date().toISOString(),
     requestId: req.requestId,
   });
 });
 
-// Middleware de errores global
+// Global error handler middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   const duration = Date.now() - req.startTime;
 
-  console.error(`[${new Date().toISOString()}] Error en ${req.requestId}:`, err);
+  console.error(`[${new Date().toISOString()}] Error in ${req.requestId}:`, err);
 
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Error interno del servidor';
+  const message = err.message || 'Internal server error';
 
   res.status(statusCode).json({
     statusCode,

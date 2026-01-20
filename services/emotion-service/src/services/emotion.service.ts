@@ -15,12 +15,12 @@ export interface Emotion {
   updatedAt: Date;
 }
 
-// Base de datos en memoria (simulada)
+// In-memory database (simulated)
 const emotionsDatabase: Map<string, Emotion> = new Map();
 
 class EmotionService {
   /**
-   * Crea una nueva emoción
+   * Creates a new emotion
    */
   createEmotion(userId: string, emotionData: Omit<Emotion, 'emotionId' | 'userId' | 'createdAt' | 'updatedAt'>): Emotion {
     const emotion: Emotion = {
@@ -36,14 +36,14 @@ class EmotionService {
   }
 
   /**
-   * Obtiene una emoción por ID
+   * Gets an emotion by ID
    */
   getEmotionById(emotionId: string): Emotion | null {
     return emotionsDatabase.get(emotionId) || null;
   }
 
   /**
-   * Obtiene todas las emociones de un usuario
+   * Gets all emotions for a user
    */
   getEmotionsByUser(userId: string, limit: number = 100, offset: number = 0): Emotion[] {
     const userEmotions = Array.from(emotionsDatabase.values())
@@ -55,7 +55,7 @@ class EmotionService {
   }
 
   /**
-   * Obtiene emociones de un usuario por rango de fechas
+   * Gets emotions for a user by date range
    */
   getEmotionsByDateRange(userId: string, startDate: Date, endDate: Date): Emotion[] {
     return Array.from(emotionsDatabase.values())
@@ -64,7 +64,7 @@ class EmotionService {
   }
 
   /**
-   * Obtiene estadísticas de emociones de un usuario
+   * Gets emotion statistics for a user
    */
   getEmotionStats(userId: string): { [key: string]: number } {
     const userEmotions = Array.from(emotionsDatabase.values())
@@ -80,7 +80,7 @@ class EmotionService {
   }
 
   /**
-   * Obtiene la emoción promedio de un usuario
+   * Gets the average intensity for a user
    */
   getAverageIntensity(userId: string): number {
     const userEmotions = Array.from(emotionsDatabase.values())
@@ -93,7 +93,7 @@ class EmotionService {
   }
 
   /**
-   * Actualiza una emoción
+   * Updates an emotion
    */
   updateEmotion(emotionId: string, userId: string, updates: Partial<Emotion>): Emotion | null {
     const emotion = emotionsDatabase.get(emotionId);
@@ -105,9 +105,9 @@ class EmotionService {
     const updated: Emotion = {
       ...emotion,
       ...updates,
-      emotionId: emotion.emotionId, // No cambiar el ID
-      userId: emotion.userId, // No cambiar el usuario
-      createdAt: emotion.createdAt, // No cambiar la fecha de creación
+      emotionId: emotion.emotionId, // Don't change the ID
+      userId: emotion.userId, // Don't change the user
+      createdAt: emotion.createdAt, // Don't change the creation date
       updatedAt: new Date(),
     };
 
@@ -116,7 +116,7 @@ class EmotionService {
   }
 
   /**
-   * Elimina una emoción
+   * Deletes an emotion
    */
   deleteEmotion(emotionId: string, userId: string): boolean {
     const emotion = emotionsDatabase.get(emotionId);
@@ -129,14 +129,14 @@ class EmotionService {
   }
 
   /**
-   * Obtiene todas las emociones (solo para análisis)
+   * Gets all emotions (for analysis only)
    */
   getAllEmotions(): Emotion[] {
     return Array.from(emotionsDatabase.values());
   }
 
   /**
-   * Obtiene la emoción más frecuente de un usuario en los últimos N días
+   * Gets the most frequent emotion for a user in the last N days
    */
   getMostFrequentEmotion(userId: string, days: number = 7): string | null {
     const startDate = new Date();
