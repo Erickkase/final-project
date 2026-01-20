@@ -4,6 +4,9 @@ import axios from 'axios';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
+// Mock isAxiosError
+(mockedAxios as any).isAxiosError = jest.fn();
+
 describe('ReportService', () => {
   let reportService: ReportService;
 
@@ -41,7 +44,10 @@ describe('ReportService', () => {
     });
 
     it('should handle user with no emotions', async () => {
-      mockedAxios.get.mockRejectedValue({ response: { status: 404 } });
+      const error: any = new Error('Not found');
+      error.response = { status: 404 };
+      mockedAxios.get.mockRejectedValue(error);
+      (mockedAxios as any).isAxiosError.mockReturnValue(true);
 
       const result = await reportService.getEmotionTrend('user456', 15);
 

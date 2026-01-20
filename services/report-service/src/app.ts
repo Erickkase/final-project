@@ -47,7 +47,7 @@ app.use((req: Request, res: Response) => {
 });
 
 // Manejo de errores
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error('Error:', err);
   res.status(500).json({ 
     error: 'Internal server error',
