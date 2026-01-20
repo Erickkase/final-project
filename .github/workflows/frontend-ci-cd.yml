@@ -152,42 +152,90 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: dev
-          base: qa
-          title: '🚀 Frontend: Deploy to QA'
-          body: |
-            ## 🎨 Frontend Deployment to QA
-            
-            ### ✅ All CI Checks Passed
-            - ✅ Lint passed
-            - ✅ Build successful
-            - ✅ TypeScript type check passed
-            
-            ### 📦 Changes
-            This PR contains frontend changes that have passed all quality checks and are ready for QA deployment.
-            
-            ### 🚀 What happens after merge?
-            - Docker image will be built with tag `v1.${{ github.run_number }}`
-            - Image will be pushed to Docker Hub
-            - Terraform will deploy to AWS QA environment
-            - ASG instances will be refreshed for zero-downtime deployment
-            
-            ### 🔗 Related Workflow
-            - **CI Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            
-            ---
-            *Auto-generated PR after successful CI checks*
-          labels: |
-            frontend
-            qa
-            auto-deploy
-          draft: false
-
-      - name: PR Created
+      - name: Check if PR already exists
+        id: check-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "✅ Pull Request created successfully!"
+          # Check if there's already an open PR from dev to qa
+          EXISTING_PR=$(gh pr list --base qa --head dev --state open --json number --jq '.[0].number')
+          
+          if [ -z "$EXISTING_PR" ]; then
+            echo "pr_exists=false" >> $GITHUB_OUTPUT
+            echo "No existing PR found"
+          else
+            echo "pr_exists=true" >> $GITHUB_OUTPUT
+            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
+            echo "Found existing PR #$EXISTING_PR"
+          fi
+
+      - name: Create Pull Request
+        if: steps.check-pr.outputs.pr_exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base qa \
+            --head dev \
+            --title "🚀 Frontend: Deploy to QA" \
+            --body "## 🎨 Frontend Deployment to QA
+
+          ### ✅ All CI Checks Passed
+          - ✅ Lint passed
+          - ✅ Build successful
+          - ✅ TypeScript type check passed
+          
+          ### 📦 Changes
+          This PR contains frontend changes that have passed all quality checks and are ready for QA deployment.
+          
+          ### 🚀 What happens after merge?
+          - Docker image will be built with tag \`v1.${{ github.run_number }}\`
+          - Image will be pushed to Docker Hub
+          - Terraform will deploy to AWS QA environment
+          - ASG instances will be refreshed for zero-downtime deployment
+          
+          ### 🔗 Related Workflow
+          - **CI Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          ---
+          *Auto-generated PR after successful CI checks*" \
+            --label "frontend,qa,auto-deploy"
+
+      - name: Update existing PR
+        if: steps.check-pr.outputs.pr_exists == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr edit ${{ steps.check-pr.outputs.pr_number }} \
+            --body "## 🎨 Frontend Deployment to QA
+
+          ### ✅ All CI Checks Passed (Latest Run)
+          - ✅ Lint passed
+          - ✅ Build successful
+          - ✅ TypeScript type check passed
+          
+          ### 📦 Changes
+          This PR contains frontend changes that have passed all quality checks and are ready for QA deployment.
+          
+          ### 🚀 What happens after merge?
+          - Docker image will be built with tag \`v1.${{ github.run_number }}\`
+          - Image will be pushed to Docker Hub
+          - Terraform will deploy to AWS QA environment
+          - ASG instances will be refreshed for zero-downtime deployment
+          
+          ### 🔗 Latest CI Run
+          - **CI Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          ---
+          *Auto-updated after successful CI checks*"
+          
+          echo "Updated existing PR #${{ steps.check-pr.outputs.pr_number }}"
+
+      - name: PR Summary
+        run: |
+          if [ "${{ steps.check-pr.outputs.pr_exists }}" == "true" ]; then
+            echo "✅ Existing PR #${{ steps.check-pr.outputs.pr_number }} updated successfully!"
+          else
+            echo "✅ New Pull Request created successfully!"
+          fi
           echo "🔗 PR will trigger Docker build and AWS deployment when merged to qa"
