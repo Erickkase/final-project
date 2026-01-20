@@ -65,8 +65,6 @@ resource "aws_launch_template" "lt" {
     port_emotion_service  = var.port_emotion_service
     image_report_service  = var.image_report_service
     port_report_service   = var.port_report_service
-    image_frontend        = var.image_frontend
-    port_frontend         = var.port_frontend
     tag                   = var.tag
     jwt_secret            = var.jwt_secret
   }))
