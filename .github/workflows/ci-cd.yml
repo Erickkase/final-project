@@ -22,9 +22,9 @@ jobs:
     name: Detect Changed Services
     runs-on: ubuntu-latest
     outputs:
-      api-gateway: ${{ steps.changes.outputs.api-gateway }}
       auth-service: ${{ steps.changes.outputs.auth-service }}
       emotion-service: ${{ steps.changes.outputs.emotion-service }}
+      report-service: ${{ steps.changes.outputs.report-service }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,48 +44,9 @@ jobs:
           echo "Changed files: $CHANGED_FILES"
           
           # Check which services changed
-          echo "api-gateway=$(echo "$CHANGED_FILES" | grep -q '^services/api-gateway/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
           echo "auth-service=$(echo "$CHANGED_FILES" | grep -q '^services/auth-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
           echo "emotion-service=$(echo "$CHANGED_FILES" | grep -q '^services/emotion-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-
-  # Test API Gateway
-  test-api-gateway:
-    name: Test API Gateway
-    runs-on: ubuntu-latest
-    needs: detect-changes
-    if: needs.detect-changes.outputs.api-gateway == 'true' || github.event_name == 'pull_request'
-    outputs:
-      status: ${{ job.status }}
-    continue-on-error: true
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'services/api-gateway/package-lock.json'
-
-      - name: Install dependencies
-        working-directory: services/api-gateway
-        run: npm ci
-
-      - name: Run linter
-        working-directory: services/api-gateway
-        run: npm run lint --if-present || true
-
-      - name: Run tests
-        working-directory: services/api-gateway
-        run: npm test -- --coverage --passWithNoTests
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./services/api-gateway/coverage/coverage-final.json
-          flags: api-gateway
-          fail_ci_if_error: false
+          echo "report-service=$(echo "$CHANGED_FILES" | grep -q '^services/report-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
   # Test Auth Service
   test-auth-service:
@@ -165,22 +126,61 @@ jobs:
           flags: emotion-service
           fail_ci_if_error: false
 
+  # Test Report Service
+  test-report-service:
+    name: Test Report Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.report-service == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/report-service/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: services/report-service
+        run: npm ci
+
+      - name: Run linter
+        working-directory: services/report-service
+        run: npm run lint --if-present || true
+
+      - name: Run tests
+        working-directory: services/report-service
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./services/report-service/coverage/coverage-final.json
+          flags: report-service
+          fail_ci_if_error: false
+
   # Create Pull Request to QA branch for passing services
   create-pr-to-qa:
     name: Create PR to QA
     runs-on: ubuntu-latest
     needs:
       - detect-changes
-      - test-api-gateway
       - test-auth-service
       - test-emotion-service
+      - test-report-service
     if: |
       always() &&
       github.event_name == 'push' && 
       github.ref == 'refs/heads/dev' &&
-      (needs.test-api-gateway.result == 'success' || 
-       needs.test-auth-service.result == 'success' || 
-       needs.test-emotion-service.result == 'success')
+      (needs.test-auth-service.result == 'success' || 
+       needs.test-emotion-service.result == 'success' || 
+       needs.test-report-service.result == 'success')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -195,13 +195,6 @@ jobs:
           
           PASSING_SERVICES=""
           
-          if [ "${{ needs.test-api-gateway.result }}" == "success" ]; then
-            echo "| API Gateway | ✅ Tests Passed |" >> pr_body.txt
-            PASSING_SERVICES="$PASSING_SERVICES- API Gateway\n"
-          else
-            echo "| API Gateway | ❌ ${{ needs.test-api-gateway.result }} |" >> pr_body.txt
-          fi
-          
           if [ "${{ needs.test-auth-service.result }}" == "success" ]; then
             echo "| Auth Service | ✅ Tests Passed |" >> pr_body.txt
             PASSING_SERVICES="$PASSING_SERVICES- Auth Service\n"
@@ -214,6 +207,13 @@ jobs:
             PASSING_SERVICES="$PASSING_SERVICES- Emotion Service\n"
           else
             echo "| Emotion Service | ❌ ${{ needs.test-emotion-service.result }} |" >> pr_body.txt
+          fi
+          
+          if [ "${{ needs.test-report-service.result }}" == "success" ]; then
+            echo "| Report Service | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- Report Service\n"
+          else
+            echo "| Report Service | ❌ ${{ needs.test-report-service.result }} |" >> pr_body.txt
           fi
           
           echo "" >> pr_body.txt
@@ -257,9 +257,9 @@ jobs:
     name: Test Summary
     runs-on: ubuntu-latest
     needs:
-      - test-api-gateway
       - test-auth-service
       - test-emotion-service
+      - test-report-service
     if: always()
     steps:
       - name: Print Summary
@@ -268,9 +268,9 @@ jobs:
           echo ""
           echo "| Service | Status | QA Merge |"
           echo "|---------|--------|----------|"
-          echo "| API Gateway | ${{ needs.test-api-gateway.result }} | ${{ needs.test-api-gateway.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
           echo "| Auth Service | ${{ needs.test-auth-service.result }} | ${{ needs.test-auth-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
           echo "| Emotion Service | ${{ needs.test-emotion-service.result }} | ${{ needs.test-emotion-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
+          echo "| Report Service | ${{ needs.test-report-service.result }} | ${{ needs.test-report-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
           echo ""
           echo "✅ = Tests passed, PR to QA will be created"
           echo "❌ = Tests failed or skipped (no PR)"
@@ -278,7 +278,7 @@ jobs:
       - name: Services Status
         if: always()
         run: |
-          if [ "${{ needs.test-api-gateway.result }}" == "failure" ] || [ "${{ needs.test-auth-service.result }}" == "failure" ] || [ "${{ needs.test-emotion-service.result }}" == "failure" ]; then
+          if [ "${{ needs.test-auth-service.result }}" == "failure" ] || [ "${{ needs.test-emotion-service.result }}" == "failure" ] || [ "${{ needs.test-report-service.result }}" == "failure" ]; then
             echo "⚠️ Some services have failing tests. PR to QA will only include passing services."
             echo "Please review the logs and fix the issues."
           else

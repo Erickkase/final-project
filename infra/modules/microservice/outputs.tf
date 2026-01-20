@@ -18,16 +18,6 @@ output "alb_arn_suffix" {
   value       = aws_lb.alb.arn_suffix
 }
 
-output "tg_api_gateway_arn" {
-  description = "ARN del Target Group de API Gateway"
-  value       = aws_lb_target_group.tg_api_gateway.arn
-}
-
-output "tg_api_gateway_arn_suffix" {
-  description = "ARN suffix del TG API Gateway para CloudWatch"
-  value       = aws_lb_target_group.tg_api_gateway.arn_suffix
-}
-
 output "tg_auth_service_arn" {
   description = "ARN del Target Group de Auth Service"
   value       = aws_lb_target_group.tg_auth_service.arn
@@ -47,6 +37,17 @@ output "tg_emotion_service_arn_suffix" {
   description = "ARN suffix del TG Emotion Service para CloudWatch"
   value       = aws_lb_target_group.tg_emotion_service.arn_suffix
 }
+
+output "tg_report_service_arn" {
+  description = "ARN del Target Group de Report Service"
+  value       = aws_lb_target_group.tg_report_service.arn
+}
+
+output "tg_report_service_arn_suffix" {
+  description = "ARN suffix del TG Report Service para CloudWatch"
+  value       = aws_lb_target_group.tg_report_service.arn_suffix
+}
+
 
 output "security_group_id" {
   description = "ID del Security Group"

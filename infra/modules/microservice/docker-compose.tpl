@@ -21,24 +21,6 @@ cat <<'EOL' > /home/ubuntu/docker-compose.yml
 version: '3.8'
 
 services:
-  api-gateway:
-    image: ${image_api_gateway}:${tag}
-    container_name: api-gateway
-    ports:
-      - "${port_api_gateway}:${port_api_gateway}"
-    environment:
-      - NODE_ENV=production
-      - PORT=${port_api_gateway}
-      - AUTH_SERVICE_URL=http://localhost:${port_auth_service}
-      - EMOTION_SERVICE_URL=http://localhost:${port_emotion_service}
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${port_api_gateway}/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
   auth-service:
     image: ${image_auth_service}:${tag}
     container_name: auth-service
@@ -70,6 +52,25 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${port_emotion_service}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  report-service:
+    image: ${image_report_service}:${tag}
+    container_name: report-service
+    ports:
+      - "${port_report_service}:${port_report_service}"
+    env_file:
+      - /home/ubuntu/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=${port_report_service}
+      - EMOTION_SERVICE_URL=http://localhost:${port_emotion_service}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${port_report_service}/health"]
       interval: 30s
       timeout: 10s
       retries: 3

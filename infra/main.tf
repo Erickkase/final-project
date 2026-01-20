@@ -10,12 +10,12 @@ module "emotrack_microservices" {
   source               = "./modules/microservice"
   name                 = "emotrack"
   docker_hub_username  = var.docker_hub_username
-  image_api_gateway    = "${var.docker_hub_username}/emotrack-api-gateway"
-  port_api_gateway     = 3000
   image_auth_service   = "${var.docker_hub_username}/emotrack-auth-service"
   port_auth_service    = 3001
   image_emotion_service = "${var.docker_hub_username}/emotrack-emotion-service"
   port_emotion_service = 3002
+  image_report_service = "${var.docker_hub_username}/emotrack-report-service"
+  port_report_service  = 3003
   tag                  = var.image_tag
   branch               = var.BRANCH_NAME
   jwt_secret           = var.jwt_secret
@@ -97,9 +97,9 @@ resource "aws_cloudwatch_dashboard" "emotrack_dashboard" {
         "height" = 6,
         "properties" = {
           "metrics" = [
-            [ "AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", module.emotrack_microservices.tg_api_gateway_arn_suffix ],
-            [ "...", module.emotrack_microservices.tg_auth_service_arn_suffix ],
-            [ "...", module.emotrack_microservices.tg_emotion_service_arn_suffix ]
+            [ "AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", module.emotrack_microservices.tg_auth_service_arn_suffix ],
+            [ "...", module.emotrack_microservices.tg_emotion_service_arn_suffix ],
+            [ "...", module.emotrack_microservices.tg_report_service_arn_suffix ]
           ],
           "period" = 300,
           "stat" = "Average",
