@@ -198,8 +198,7 @@ jobs:
           - **CI Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           
           ---
-          *Auto-generated PR after successful CI checks*" \
-            --label "frontend,qa,auto-deploy"
+          *Auto-generated PR after successful CI checks*"
 
       - name: Update existing PR
         if: steps.check-pr.outputs.pr_exists == 'true'
