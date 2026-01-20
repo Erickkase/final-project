@@ -121,19 +121,26 @@ jobs:
         run: |
           terraform apply -auto-approve tfplan
 
-      - name: Get ALB DNS
+      - name: Get Frontend ALB DNS
         id: alb-dns
         run: |
-          ALB_DNS=$(terraform output -raw alb_dns_name)
-          echo "alb_dns=$ALB_DNS" >> $GITHUB_OUTPUT
-          echo "🌐 ALB DNS: $ALB_DNS"
+          FRONTEND_ALB_DNS=$(terraform output -raw frontend_alb_dns)
+          echo "frontend_alb_dns=$FRONTEND_ALB_DNS" >> $GITHUB_OUTPUT
+          echo "🌐 Frontend ALB DNS: $FRONTEND_ALB_DNS"
 
-      - name: Get ASG Name
+      - name: Get Frontend ASG Name
         id: asg-name
         run: |
-          ASG_NAME=$(terraform output -raw asg_name)
-          echo "asg_name=$ASG_NAME" >> $GITHUB_OUTPUT
-          echo "📦 ASG Name: $ASG_NAME"
+          FRONTEND_ASG_NAME=$(terraform output -raw frontend_asg_name)
+          echo "frontend_asg_name=$FRONTEND_ASG_NAME" >> $GITHUB_OUTPUT
+          echo "📦 Frontend ASG Name: $FRONTEND_ASG_NAME"
+          
+      - name: Get Backend API URL
+        id: backend-url
+        run: |
+          BACKEND_URL=$(terraform output -raw api_gateway_url)
+          echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "🔗 Backend API URL: $BACKEND_URL"
 
   refresh-instances:
     name: Refresh ASG Instances
@@ -156,21 +163,21 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Get ASG Name from Terraform
+      - name: Get Frontend ASG Name from Terraform
         id: get-asg
         working-directory: infra
         run: |
           terraform init
-          ASG_NAME=$(terraform output -raw asg_name)
-          echo "asg_name=$ASG_NAME" >> $GITHUB_OUTPUT
-          echo "ASG Name: $ASG_NAME"
+          FRONTEND_ASG_NAME=$(terraform output -raw frontend_asg_name)
+          echo "frontend_asg_name=$FRONTEND_ASG_NAME" >> $GITHUB_OUTPUT
+          echo "Frontend ASG Name: $FRONTEND_ASG_NAME"
 
       - name: Start Instance Refresh
         run: |
-          echo "Starting instance refresh for ASG: ${{ steps.get-asg.outputs.asg_name }}"
+          echo "Starting instance refresh for Frontend ASG: ${{ steps.get-asg.outputs.frontend_asg_name }}"
           
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name ${{ steps.get-asg.outputs.asg_name }} \
+            --auto-scaling-group-name ${{ steps.get-asg.outputs.frontend_asg_name }} \
             --preferences '{
               "MinHealthyPercentage": 50,
               "InstanceWarmup": 300,
@@ -189,7 +196,7 @@ jobs:
           
           while true; do
             STATUS=$(aws autoscaling describe-instance-refreshes \
-              --auto-scaling-group-name ${{ steps.get-asg.outputs.asg_name }} \
+              --auto-scaling-group-name ${{ steps.get-asg.outputs.frontend_asg_name }} \
               --query 'InstanceRefreshes[0].Status' \
               --output text)
             
