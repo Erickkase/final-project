@@ -45,11 +45,6 @@ variable "subnet1" {
   type        = string
   description = "ID de la primera subnet"
 }
-variable "backend_api_url" {
-  description = "URL del backend API (ALB de microservices)"
-  type        = string
-  default     = "http://backend-placeholder"
-}
 variable "subnet2" {
   type        = string
   description = "ID de la segunda subnet"
