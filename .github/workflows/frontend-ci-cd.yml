@@ -20,6 +20,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   lint:
@@ -159,7 +160,7 @@ jobs:
       - name: Check if PR already exists
         id: check-pr
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TOKEN }}
         run: |
           # Check if there's already an open PR from dev to qa
           EXISTING_PR=$(gh pr list --base qa --head dev --state open --json number --jq '.[0].number')
@@ -176,7 +177,7 @@ jobs:
       - name: Create Pull Request
         if: steps.check-pr.outputs.pr_exists == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TOKEN }}
         run: |
           gh pr create \
             --base qa \
@@ -184,55 +185,57 @@ jobs:
             --title "🚀 Frontend: Deploy to QA" \
             --body "## 🎨 Frontend Deployment to QA
 
-          ### ✅ All CI Checks Passed
-          - ✅ Lint passed
-          - ✅ Build successful
-          - ✅ TypeScript type check passed
+### ✅ All CI Checks Passed
+- ✅ Lint passed
+- ✅ Build successful
+- ✅ TypeScript type check passed
+
+### 📦 Changes
+This PR contains frontend changes that have passed all quality checks and are ready for QA deployment.
+
+### 🚀 What happens after merge?
+- Docker image will be built with tag v1.\${{ github.run_number }}
+- Image will be pushed to Docker Hub
+- Terraform will deploy to AWS QA environment
+- ASG instances will be refreshed for zero-downtime deployment
+
+### 🔗 Related Workflow
+- **CI Run**: \${{ github.server_url }}/\${{ github.repository }}/actions/runs/\${{ github.run_id }}
+
+---
+*Auto-generated PR after successful CI checks*"
           
-          ### 📦 Changes
-          This PR contains frontend changes that have passed all quality checks and are ready for QA deployment.
-          
-          ### 🚀 What happens after merge?
-          - Docker image will be built with tag \`v1.${{ github.run_number }}\`
-          - Image will be pushed to Docker Hub
-          - Terraform will deploy to AWS QA environment
-          - ASG instances will be refreshed for zero-downtime deployment
-          
-          ### 🔗 Related Workflow
-          - **CI Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          
-          ---
-          *Auto-generated PR after successful CI checks*"
+          echo "✅ Pull Request created successfully!"
 
       - name: Update existing PR
         if: steps.check-pr.outputs.pr_exists == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TOKEN }}
         run: |
           gh pr edit ${{ steps.check-pr.outputs.pr_number }} \
             --body "## 🎨 Frontend Deployment to QA
 
-          ### ✅ All CI Checks Passed (Latest Run)
-          - ✅ Lint passed
-          - ✅ Build successful
-          - ✅ TypeScript type check passed
+### ✅ All CI Checks Passed (Latest Run)
+- ✅ Lint passed
+- ✅ Build successful
+- ✅ TypeScript type check passed
+
+### 📦 Changes
+This PR contains frontend changes that have passed all quality checks and are ready for QA deployment.
+
+### 🚀 What happens after merge?
+- Docker image will be built with tag v1.\${{ github.run_number }}
+- Image will be pushed to Docker Hub
+- Terraform will deploy to AWS QA environment
+- ASG instances will be refreshed for zero-downtime deployment
+
+### 🔗 Latest CI Run
+- **CI Run**: \${{ github.server_url }}/\${{ github.repository }}/actions/runs/\${{ github.run_id }}
+
+---
+*Auto-updated after successful CI checks*"
           
-          ### 📦 Changes
-          This PR contains frontend changes that have passed all quality checks and are ready for QA deployment.
-          
-          ### 🚀 What happens after merge?
-          - Docker image will be built with tag \`v1.${{ github.run_number }}\`
-          - Image will be pushed to Docker Hub
-          - Terraform will deploy to AWS QA environment
-          - ASG instances will be refreshed for zero-downtime deployment
-          
-          ### 🔗 Latest CI Run
-          - **CI Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          
-          ---
-          *Auto-updated after successful CI checks*"
-          
-          echo "Updated existing PR #${{ steps.check-pr.outputs.pr_number }}"
+          echo "✅ Updated existing PR #${{ steps.check-pr.outputs.pr_number }}"
 
       - name: PR Summary
         run: |
