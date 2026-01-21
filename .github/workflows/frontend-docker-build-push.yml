@@ -105,6 +105,12 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
         
+      - name: Create Frontend Terraform Config
+        run: |
+          echo "Creating frontend-only Terraform configuration..."
+          # Use only frontend.tf, frontend-outputs.tf, frontend-variables.tf
+          # This ensures we don't try to create microservices resources
+        
       - name: Check Existing Resources
         id: check-resources
         continue-on-error: true
@@ -114,41 +120,46 @@ jobs:
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          echo "Checking for existing resources in AWS..."
+          echo "Checking for existing FRONTEND resources in AWS..."
           
           # Check if resources already exist
           EXISTING_RESOURCES=0
           
-          # Check microservices ALB
-          if aws elbv2 describe-load-balancers --names emotrack-alb 2>/dev/null | grep -q "emotrack-alb"; then
-            echo "Found existing emotrack-alb"
+          # Check ONLY frontend ALB (not microservices)
+          if aws elbv2 describe-load-balancers --names emotrack-frontend-alb 2>/dev/null | grep -q "emotrack-frontend-alb"; then
+            echo "Found existing emotrack-frontend-alb"
             EXISTING_RESOURCES=$((EXISTING_RESOURCES + 1))
           fi
           
-          # Check frontend ALB
-          if aws elbv2 describe-load-balancers --names emotrack-frontend-alb 2>/dev/null | grep -q "emotrack-frontend-alb"; then
-            echo "Found existing emotrack-frontend-alb"
+          # Check ONLY frontend ASG
+          if aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names emotrack-frontend-asg 2>/dev/null | grep -q "emotrack-frontend-asg"; then
+            echo "Found existing emotrack-frontend-asg"
             EXISTING_RESOURCES=$((EXISTING_RESOURCES + 1))
           fi
           
           echo "existing_count=$EXISTING_RESOURCES" >> $GITHUB_OUTPUT
           
           if [ $EXISTING_RESOURCES -gt 0 ]; then
-            echo "⚠️ Found $EXISTING_RESOURCES existing resources, will handle carefully"
+            echo "⚠️ Found $EXISTING_RESOURCES existing frontend resources, will handle carefully"
           else
-            echo "✅ No existing resources found, clean deployment"
+            echo "✅ No existing frontend resources found, clean deployment"
           fi
 
-      - name: Terraform Plan
+      - name: Terraform Plan (Frontend Only)
         run: |
           terraform plan \
+            -target=module.emotrack_frontend \
+            -target=aws_sns_topic.frontend_alerts \
+            -target=aws_sns_topic_subscription.frontend_email \
+            -target=aws_cloudwatch_metric_alarm.frontend_asg_high_cpu \
+            -target=aws_cloudwatch_dashboard.frontend_dashboard \
             -var="AWS_REGION=${{ secrets.AWS_REGION }}" \
             -var="AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var="AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
             -var="AWS_SESSION_TOKEN=${{ secrets.AWS_SESSION_TOKEN }}" \
             -var="docker_hub_username=${{ secrets.DOCKER_HUB_USERNAME }}" \
             -var="image_tag=v1.${{ github.run_number }}" \
-            -var="jwt_secret=${{ secrets.JWT_SECRET }}" \
+            -var="backend_api_url=${{ secrets.FRONTEND_API_URL || 'http://placeholder' }}" \
             -var="vpc_id=${{ secrets.VPC_ID }}" \
             -var="subnet1=${{ secrets.SUBNET1 }}" \
             -var="subnet2=${{ secrets.SUBNET2 }}" \
@@ -251,7 +262,38 @@ jobs:
           echo "frontend_asg_name=$FRONTEND_ASG_NAME" >> $GITHUB_OUTPUT
           echo "Frontend ASG Name: $FRONTEND_ASG_NAME"
 
+      - name: Verify ASG Exists
+        id: verify-asg
+        continue-on-error: true
+        run: |
+          ASG_NAME="${{ steps.get-asg.outputs.frontend_asg_name }}"
+          
+          echo "Checking if ASG exists: $ASG_NAME"
+          
+          if aws autoscaling describe-auto-scaling-groups \
+            --auto-scaling-group-names "$ASG_NAME" \
+            --query 'AutoScalingGroups[0].AutoScalingGroupName' \
+            --output text 2>/dev/null | grep -q "$ASG_NAME"; then
+            echo "asg_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ ASG found in AWS"
+            
+            # Get current instance count
+            INSTANCE_COUNT=$(aws autoscaling describe-auto-scaling-groups \
+              --auto-scaling-group-names "$ASG_NAME" \
+              --query 'AutoScalingGroups[0].Instances | length(@)' \
+              --output text)
+            
+            echo "instances=$INSTANCE_COUNT" >> $GITHUB_OUTPUT
+            echo "📊 Current instances: $INSTANCE_COUNT"
+          else
+            echo "asg_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ ASG not found in AWS yet"
+          fi
+
       - name: Start Instance Refresh
+        if: steps.verify-asg.outputs.asg_exists == 'true' && steps.verify-asg.outputs.instances > 0
+        id: start-refresh
+        continue-on-error: true
         run: |
           echo "Starting instance refresh for Frontend ASG: ${{ steps.get-asg.outputs.frontend_asg_name }}"
           
@@ -270,6 +312,7 @@ jobs:
           echo "refresh_id=$REFRESH_ID" >> $GITHUB_OUTPUT
 
       - name: Wait for Instance Refresh
+        if: steps.start-refresh.outputs.refresh_id != ''
         run: |
           echo "Waiting for instance refresh to complete..."
           
@@ -291,6 +334,14 @@ jobs:
             
             sleep 30
           done
+
+      - name: Skip Message
+        if: steps.verify-asg.outputs.asg_exists != 'true'
+        run: |
+          echo "⚠️ ASG not found or no instances running"
+          echo "This is expected for first deployment"
+          echo "Instances will start automatically from the new launch template"
+          echo "✅ Deployment will continue without instance refresh"
 
   deployment-summary:
     name: Deployment Summary

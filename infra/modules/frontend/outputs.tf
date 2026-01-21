@@ -29,3 +29,8 @@ output "target_group_arn" {
   description = "ARN of the frontend target group"
   value       = aws_lb_target_group.frontend_tg.arn
 }
+
+output "target_group_arn_suffix" {
+  description = "ARN suffix of the frontend target group for CloudWatch"
+  value       = aws_lb_target_group.frontend_tg.arn_suffix
+}
