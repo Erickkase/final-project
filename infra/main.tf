@@ -1,11 +1,4 @@
-provider "aws" {
-  region     = var.AWS_REGION
-  access_key = var.AWS_ACCESS_KEY_ID
-  secret_key = var.AWS_SECRET_ACCESS_KEY
-  token      = var.AWS_SESSION_TOKEN
-}
-
-# Module for EmoTrack microservices
+# Module for EmoTrack microservices ONLY
 module "emotrack_microservices" {
   source               = "./modules/microservice"
   name                 = "emotrack"
@@ -22,21 +15,6 @@ module "emotrack_microservices" {
   vpc_id               = var.vpc_id
   subnet1              = var.subnet1
   subnet2              = var.subnet2
-}
-
-# Module for EmoTrack Frontend (separate infrastructure)
-module "emotrack_frontend" {
-  source              = "./modules/frontend"
-  name                = "emotrack"
-  docker_hub_username = var.docker_hub_username
-  image_frontend      = "emotrack-frontend"
-  port_frontend       = 80
-  tag                 = var.image_tag
-  branch              = var.BRANCH_NAME
-  vpc_id              = var.vpc_id
-  subnet1             = var.subnet1
-  subnet2             = var.subnet2
-  api_base_url        = "http://${module.emotrack_microservices.alb_dns_name}"
 }
 
 # --- SNS Topic y Subscription para notificaciones ---
@@ -67,26 +45,9 @@ resource "aws_cloudwatch_metric_alarm" "asg_high_cpu" {
   alarm_actions       = [aws_sns_topic.asg_alerts.arn]
 }
 
-# CloudWatch Alarm for Frontend ASG
-resource "aws_cloudwatch_metric_alarm" "frontend_asg_high_cpu" {
-  alarm_name          = "emotrack-frontend-asg-high-cpu"
-  alarm_description   = "High CPU utilization alarm for EmoTrack Frontend ASG"
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
-  statistic           = "Average"
-  period              = 120
-  dimensions = {
-    AutoScalingGroupName = module.emotrack_frontend.asg_name
-  }
-  comparison_operator = "GreaterThanThreshold"
-  threshold           = 80
-  evaluation_periods  = 2
-  alarm_actions       = [aws_sns_topic.asg_alerts.arn]
-}
-
-# --- CloudWatch Dashboard para monitoreo ---
+# --- CloudWatch Dashboard para monitoreo de Microservices ---
 resource "aws_cloudwatch_dashboard" "emotrack_dashboard" {
-  dashboard_name = "emotrack-dashboard"
+  dashboard_name = "emotrack-microservices-dashboard"
   dashboard_body = jsonencode({
     widgets = [
       {
@@ -97,13 +58,12 @@ resource "aws_cloudwatch_dashboard" "emotrack_dashboard" {
         "height" = 6,
         "properties" = {
           "metrics" = [
-            [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", module.emotrack_microservices.asg_name, { "label": "Services ASG" } ],
-            [ "...", module.emotrack_frontend.asg_name, { "label": "Frontend ASG" } ]
+            [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", module.emotrack_microservices.asg_name, { "label": "Services ASG" } ]
           ],
           "period" = 300,
           "stat" = "Average",
           "region" = var.AWS_REGION,
-          "title" = "EmoTrack ASG CPU Utilization"
+          "title" = "Microservices ASG CPU Utilization"
         }
       },
       {
@@ -114,13 +74,12 @@ resource "aws_cloudwatch_dashboard" "emotrack_dashboard" {
         "height" = 6,
         "properties" = {
           "metrics" = [
-            [ "AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", module.emotrack_microservices.alb_arn_suffix, { "label": "Services ALB" } ],
-            [ "...", module.emotrack_frontend.alb_arn_suffix, { "label": "Frontend ALB" } ]
+            [ "AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", module.emotrack_microservices.alb_arn_suffix, { "label": "Services ALB" } ]
           ],
           "period" = 300,
           "stat" = "Average",
           "region" = var.AWS_REGION,
-          "title" = "ALB Response Time"
+          "title" = "Microservices ALB Response Time"
         }
       },
       {
@@ -133,13 +92,12 @@ resource "aws_cloudwatch_dashboard" "emotrack_dashboard" {
           "metrics" = [
             [ "AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", module.emotrack_microservices.tg_auth_service_arn_suffix, { "label": "Auth Service" } ],
             [ "...", module.emotrack_microservices.tg_emotion_service_arn_suffix, { "label": "Emotion Service" } ],
-            [ "...", module.emotrack_microservices.tg_report_service_arn_suffix, { "label": "Report Service" } ],
-            [ "...", module.emotrack_frontend.target_group_arn, { "label": "Frontend" } ]
+            [ "...", module.emotrack_microservices.tg_report_service_arn_suffix, { "label": "Report Service" } ]
           ],
           "period" = 300,
           "stat" = "Average",
           "region" = var.AWS_REGION,
-          "title" = "Healthy Hosts per Service"
+          "title" = "Healthy Hosts per Microservice"
         }
       }
     ]

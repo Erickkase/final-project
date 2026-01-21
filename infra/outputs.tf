@@ -23,22 +23,7 @@ output "emotion_service_url" {
   value       = "http://${module.emotrack_microservices.alb_dns_name}/emotions"
 }
 
-output "frontend_alb_dns" {
-  description = "DNS del Load Balancer del Frontend"
-  value       = module.emotrack_frontend.alb_dns_name
-}
-
-output "frontend_asg_name" {
-  description = "Nombre del Auto Scaling Group del Frontend"
-  value       = module.emotrack_frontend.asg_name
-}
-
-output "frontend_url" {
-  description = "URL del Frontend Application"
-  value       = "http://${module.emotrack_frontend.alb_dns_name}"
-}
-
 output "cloudwatch_dashboard_url" {
-  description = "URL del dashboard de CloudWatch"
-  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${var.AWS_REGION}#dashboards:name=emotrack-dashboard"
+  description = "URL del dashboard de CloudWatch para Microservices"
+  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${var.AWS_REGION}#dashboards:name=emotrack-microservices-dashboard"
 }
