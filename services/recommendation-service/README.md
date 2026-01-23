@@ -277,3 +277,4 @@ The service follows clean architecture principles:
 ## License
 
 ISC
+

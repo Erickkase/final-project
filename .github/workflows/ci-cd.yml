@@ -25,6 +25,13 @@ jobs:
       auth-service: ${{ steps.changes.outputs.auth-service }}
       emotion-service: ${{ steps.changes.outputs.emotion-service }}
       report-service: ${{ steps.changes.outputs.report-service }}
+      notification-service: ${{ steps.changes.outputs.notification-service }}
+      user-service: ${{ steps.changes.outputs.user-service }}
+      analytics-service: ${{ steps.changes.outputs.analytics-service }}
+      goal-service: ${{ steps.changes.outputs.goal-service }}
+      journal-service: ${{ steps.changes.outputs.journal-service }}
+      recommendation-service: ${{ steps.changes.outputs.recommendation-service }}
+      api-gateway: ${{ steps.changes.outputs.api-gateway }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -47,6 +54,13 @@ jobs:
           echo "auth-service=$(echo "$CHANGED_FILES" | grep -q '^services/auth-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
           echo "emotion-service=$(echo "$CHANGED_FILES" | grep -q '^services/emotion-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
           echo "report-service=$(echo "$CHANGED_FILES" | grep -q '^services/report-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "notification-service=$(echo "$CHANGED_FILES" | grep -q '^services/notification-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "user-service=$(echo "$CHANGED_FILES" | grep -q '^services/user-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "analytics-service=$(echo "$CHANGED_FILES" | grep -q '^services/analytics-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "goal-service=$(echo "$CHANGED_FILES" | grep -q '^services/goal-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "journal-service=$(echo "$CHANGED_FILES" | grep -q '^services/journal-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "recommendation-service=$(echo "$CHANGED_FILES" | grep -q '^services/recommendation-service/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "api-gateway=$(echo "$CHANGED_FILES" | grep -q '^services/api-gateway/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
   # Test Auth Service
   test-auth-service:
@@ -165,6 +179,279 @@ jobs:
           flags: report-service
           fail_ci_if_error: false
 
+  # Test Notification Service
+  test-notification-service:
+    name: Test Notification Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.notification-service == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/notification-service/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: services/notification-service
+        run: npm ci
+
+      - name: Run linter
+        working-directory: services/notification-service
+        run: npm run lint --if-present || true
+
+      - name: Run tests
+        working-directory: services/notification-service
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./services/notification-service/coverage/coverage-final.json
+          flags: notification-service
+          fail_ci_if_error: false
+
+  # Test User Service
+  test-user-service:
+    name: Test User Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user-service == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/user-service/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: services/user-service
+        run: npm ci
+
+      - name: Run linter
+        working-directory: services/user-service
+        run: npm run lint --if-present || true
+
+      - name: Run tests
+        working-directory: services/user-service
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./services/user-service/coverage/coverage-final.json
+          flags: user-service
+          fail_ci_if_error: false
+
+  # Test Analytics Service
+  test-analytics-service:
+    name: Test Analytics Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.analytics-service == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/analytics-service/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: services/analytics-service
+        run: npm ci
+
+      - name: Run linter
+        working-directory: services/analytics-service
+        run: npm run lint --if-present || true
+
+      - name: Run tests
+        working-directory: services/analytics-service
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./services/analytics-service/coverage/coverage-final.json
+          flags: analytics-service
+          fail_ci_if_error: false
+
+  # Test Goal Service
+  test-goal-service:
+    name: Test Goal Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.goal-service == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/goal-service/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: services/goal-service
+        run: npm ci
+
+      - name: Run linter
+        working-directory: services/goal-service
+        run: npm run lint --if-present || true
+
+      - name: Run tests
+        working-directory: services/goal-service
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./services/goal-service/coverage/coverage-final.json
+          flags: goal-service
+          fail_ci_if_error: false
+
+  # Test Journal Service
+  test-journal-service:
+    name: Test Journal Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.journal-service == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/journal-service/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: services/journal-service
+        run: npm ci
+
+      - name: Run linter
+        working-directory: services/journal-service
+        run: npm run lint --if-present || true
+
+      - name: Run tests
+        working-directory: services/journal-service
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./services/journal-service/coverage/coverage-final.json
+          flags: journal-service
+          fail_ci_if_error: false
+
+  # Test Recommendation Service
+  test-recommendation-service:
+    name: Test Recommendation Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.recommendation-service == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/recommendation-service/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: services/recommendation-service
+        run: npm ci
+
+      - name: Run linter
+        working-directory: services/recommendation-service
+        run: npm run lint --if-present || true
+
+      - name: Run tests
+        working-directory: services/recommendation-service
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./services/recommendation-service/coverage/coverage-final.json
+          flags: recommendation-service
+          fail_ci_if_error: false
+
+  # Test API Gateway
+  test-api-gateway:
+    name: Test API Gateway
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api-gateway == 'true' || github.event_name == 'pull_request'
+    outputs:
+      status: ${{ job.status }}
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/api-gateway/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: services/api-gateway
+        run: npm ci
+
+      - name: Run linter
+        working-directory: services/api-gateway
+        run: npm run lint --if-present || true
+
+      - name: Run tests
+        working-directory: services/api-gateway
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./services/api-gateway/coverage/coverage-final.json
+          flags: api-gateway
+          fail_ci_if_error: false
+
   # Create Pull Request to QA branch for passing services
   create-pr-to-qa:
     name: Create PR to QA
@@ -174,13 +461,27 @@ jobs:
       - test-auth-service
       - test-emotion-service
       - test-report-service
+      - test-notification-service
+      - test-user-service
+      - test-analytics-service
+      - test-goal-service
+      - test-journal-service
+      - test-recommendation-service
+      - test-api-gateway
     if: |
       always() &&
       github.event_name == 'push' && 
       github.ref == 'refs/heads/dev' &&
       (needs.test-auth-service.result == 'success' || 
        needs.test-emotion-service.result == 'success' || 
-       needs.test-report-service.result == 'success')
+       needs.test-report-service.result == 'success' ||
+       needs.test-notification-service.result == 'success' ||
+       needs.test-user-service.result == 'success' ||
+       needs.test-analytics-service.result == 'success' ||
+       needs.test-goal-service.result == 'success' ||
+       needs.test-journal-service.result == 'success' ||
+       needs.test-recommendation-service.result == 'success' ||
+       needs.test-api-gateway.result == 'success')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -214,6 +515,55 @@ jobs:
             PASSING_SERVICES="$PASSING_SERVICES- Report Service\n"
           else
             echo "| Report Service | ❌ ${{ needs.test-report-service.result }} |" >> pr_body.txt
+          fi
+          
+          if [ "${{ needs.test-notification-service.result }}" == "success" ]; then
+            echo "| Notification Service | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- Notification Service\n"
+          else
+            echo "| Notification Service | ❌ ${{ needs.test-notification-service.result }} |" >> pr_body.txt
+          fi
+          
+          if [ "${{ needs.test-user-service.result }}" == "success" ]; then
+            echo "| User Service | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- User Service\n"
+          else
+            echo "| User Service | ❌ ${{ needs.test-user-service.result }} |" >> pr_body.txt
+          fi
+          
+          if [ "${{ needs.test-analytics-service.result }}" == "success" ]; then
+            echo "| Analytics Service | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- Analytics Service\n"
+          else
+            echo "| Analytics Service | ❌ ${{ needs.test-analytics-service.result }} |" >> pr_body.txt
+          fi
+          
+          if [ "${{ needs.test-goal-service.result }}" == "success" ]; then
+            echo "| Goal Service | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- Goal Service\n"
+          else
+            echo "| Goal Service | ❌ ${{ needs.test-goal-service.result }} |" >> pr_body.txt
+          fi
+          
+          if [ "${{ needs.test-journal-service.result }}" == "success" ]; then
+            echo "| Journal Service | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- Journal Service\n"
+          else
+            echo "| Journal Service | ❌ ${{ needs.test-journal-service.result }} |" >> pr_body.txt
+          fi
+          
+          if [ "${{ needs.test-recommendation-service.result }}" == "success" ]; then
+            echo "| Recommendation Service | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- Recommendation Service\n"
+          else
+            echo "| Recommendation Service | ❌ ${{ needs.test-recommendation-service.result }} |" >> pr_body.txt
+          fi
+          
+          if [ "${{ needs.test-api-gateway.result }}" == "success" ]; then
+            echo "| API Gateway | ✅ Tests Passed |" >> pr_body.txt
+            PASSING_SERVICES="$PASSING_SERVICES- API Gateway\n"
+          else
+            echo "| API Gateway | ❌ ${{ needs.test-api-gateway.result }} |" >> pr_body.txt
           fi
           
           echo "" >> pr_body.txt
@@ -260,6 +610,13 @@ jobs:
       - test-auth-service
       - test-emotion-service
       - test-report-service
+      - test-notification-service
+      - test-user-service
+      - test-analytics-service
+      - test-goal-service
+      - test-journal-service
+      - test-recommendation-service
+      - test-api-gateway
     if: always()
     steps:
       - name: Print Summary
@@ -271,6 +628,13 @@ jobs:
           echo "| Auth Service | ${{ needs.test-auth-service.result }} | ${{ needs.test-auth-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
           echo "| Emotion Service | ${{ needs.test-emotion-service.result }} | ${{ needs.test-emotion-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
           echo "| Report Service | ${{ needs.test-report-service.result }} | ${{ needs.test-report-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
+          echo "| Notification Service | ${{ needs.test-notification-service.result }} | ${{ needs.test-notification-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
+          echo "| User Service | ${{ needs.test-user-service.result }} | ${{ needs.test-user-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
+          echo "| Analytics Service | ${{ needs.test-analytics-service.result }} | ${{ needs.test-analytics-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
+          echo "| Goal Service | ${{ needs.test-goal-service.result }} | ${{ needs.test-goal-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
+          echo "| Journal Service | ${{ needs.test-journal-service.result }} | ${{ needs.test-journal-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
+          echo "| Recommendation Service | ${{ needs.test-recommendation-service.result }} | ${{ needs.test-recommendation-service.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
+          echo "| API Gateway | ${{ needs.test-api-gateway.result }} | ${{ needs.test-api-gateway.result == 'success' && '✅ Ready for QA' || '❌ Not ready' }} |"
           echo ""
           echo "✅ = Tests passed, PR to QA will be created"
           echo "❌ = Tests failed or skipped (no PR)"
@@ -278,7 +642,16 @@ jobs:
       - name: Services Status
         if: always()
         run: |
-          if [ "${{ needs.test-auth-service.result }}" == "failure" ] || [ "${{ needs.test-emotion-service.result }}" == "failure" ] || [ "${{ needs.test-report-service.result }}" == "failure" ]; then
+          if [ "${{ needs.test-auth-service.result }}" == "failure" ] || \
+             [ "${{ needs.test-emotion-service.result }}" == "failure" ] || \
+             [ "${{ needs.test-report-service.result }}" == "failure" ] || \
+             [ "${{ needs.test-notification-service.result }}" == "failure" ] || \
+             [ "${{ needs.test-user-service.result }}" == "failure" ] || \
+             [ "${{ needs.test-analytics-service.result }}" == "failure" ] || \
+             [ "${{ needs.test-goal-service.result }}" == "failure" ] || \
+             [ "${{ needs.test-journal-service.result }}" == "failure" ] || \
+             [ "${{ needs.test-recommendation-service.result }}" == "failure" ] || \
+             [ "${{ needs.test-api-gateway.result }}" == "failure" ]; then
             echo "⚠️ Some services have failing tests. PR to QA will only include passing services."
             echo "Please review the logs and fix the issues."
           else

@@ -193,3 +193,4 @@ El servicio incluye prompts predefinidos para ayudar a los usuarios a reflexiona
 - **Presentation Layer**: Rutas y controladores
 
 Siguiendo principios SOLID y clean code.
+

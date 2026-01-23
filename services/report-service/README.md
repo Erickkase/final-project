@@ -35,3 +35,4 @@ npm test
 - `NODE_ENV` - Entorno de ejecución
 - `JWT_SECRET` - Secreto para validar tokens JWT
 - `EMOTION_SERVICE_URL` - URL del servicio de emociones
+

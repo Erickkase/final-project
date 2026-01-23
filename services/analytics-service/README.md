@@ -71,3 +71,4 @@ docker run -p 3007:3007 analytics-service
 ✅ 8 tests unitarios
 ✅ Coverage > 70%
 ✅ Integrado con CI/CD
+

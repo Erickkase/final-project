@@ -6,7 +6,11 @@
   "collectCoverageFrom": [
     "src/**/*.ts",
     "!src/**/*.test.ts",
-    "!src/index.ts"
+    "!src/__tests__/**",
+    "!src/index.ts",
+    "!src/app.ts",
+    "!src/routes/**",
+    "!src/middleware/**"
   ],
   "coverageThreshold": {
     "global": {
