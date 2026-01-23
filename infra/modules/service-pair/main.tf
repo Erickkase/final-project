@@ -73,7 +73,8 @@ resource "aws_launch_template" "lt" {
 resource "aws_lb_target_group" "tg" {
   for_each = { for service in var.services : service.name => service }
   
-  name     = "${var.pair_name}-${substr(each.value.name, 0, 15)}-tg"
+  # Name must be max 32 chars. Using format: <first 8 chars of pair>-<first 18 chars of service>-tg
+  name     = "${substr(var.pair_name, 0, 8)}-${substr(each.value.name, 0, 18)}-tg"
   port     = each.value.port
   protocol = "HTTP"
   vpc_id   = var.vpc_id
