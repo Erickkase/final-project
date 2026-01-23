@@ -194,3 +194,5 @@ El servicio incluye prompts predefinidos para ayudar a los usuarios a reflexiona
 
 Siguiendo principios SOLID y clean code.
 
+
+
