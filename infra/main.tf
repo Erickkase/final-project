@@ -1,25 +1,260 @@
-# Module for EmoTrack microservices ONLY
-module "emotrack_microservices" {
-  source               = "./modules/microservice"
-  name                 = "emotrack"
-  docker_hub_username  = var.docker_hub_username
-  image_auth_service   = "${var.docker_hub_username}/emotrack-auth-service"
-  port_auth_service    = 3001
-  image_emotion_service = "${var.docker_hub_username}/emotrack-emotion-service"
-  port_emotion_service = 3002
-  image_report_service = "${var.docker_hub_username}/emotrack-report-service"
-  port_report_service  = 3003
-  tag                  = var.image_tag
-  branch               = var.BRANCH_NAME
-  jwt_secret           = var.jwt_secret
-  vpc_id               = var.vpc_id
-  subnet1              = var.subnet1
-  subnet2              = var.subnet2
+# Provider Configuration
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+  }
+  required_version = ">= 1.0"
 }
 
-# --- SNS Topic y Subscription para notificaciones ---
+provider "aws" {
+  region = var.AWS_REGION
+}
+
+# ============================================================
+# SHARED APPLICATION LOAD BALANCER
+# ============================================================
+
+# Security Group para el ALB
+resource "aws_security_group" "alb_sg" {
+  name_prefix = "emotrack-alb-sg"
+  vpc_id      = var.vpc_id
+
+  # HTTP
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTPS (futuro)
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "emotrack-alb-sg"
+  }
+}
+
+# Application Load Balancer Compartido
+resource "aws_lb" "main_alb" {
+  name               = "emotrack-main-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg.id]
+  subnets            = [var.subnet1, var.subnet2]
+
+  tags = {
+    Name = "emotrack-main-alb"
+  }
+}
+
+# ALB Listener (puerto 80)
+resource "aws_lb_listener" "main_listener" {
+  load_balancer_arn = aws_lb.main_alb.arn
+  port              = 80
+  protocol          = "HTTP"
+  
+  # Default action - Return 404 for unknown paths
+  default_action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Service not found"
+      status_code  = "404"
+    }
+  }
+}
+
+# ============================================================
+# SERVICE PAIRS
+# ============================================================
+
+# Pair 1: API Gateway (3000) + Auth Service (3001)
+module "pair_1" {
+  source = "./modules/service-pair"
+  
+  pair_name                = "emotrack-pair-1"
+  docker_compose_template  = "${path.module}/modules/microservice/docker-compose-pair-1.tpl"
+  vpc_id                   = var.vpc_id
+  subnet1                  = var.subnet1
+  subnet2                  = var.subnet2
+  jwt_secret               = var.jwt_secret
+  docker_hub_username      = var.docker_hub_username
+  tag                      = var.image_tag
+  alb_sg_id                = aws_security_group.alb_sg.id
+  alb_listener_arn         = aws_lb_listener.main_listener.arn
+  priority_offset          = 100
+  
+  services = [
+    {
+      name  = "api-gateway"
+      port  = 3000
+      image = "${var.docker_hub_username}/emotrack-api-gateway"
+      path  = "/api"
+    },
+    {
+      name  = "auth-service"
+      port  = 3001
+      image = "${var.docker_hub_username}/emotrack-auth-service"
+      path  = "/auth"
+    }
+  ]
+}
+
+# Pair 2: Emotion Service (3002) + Report Service (3004)
+module "pair_2" {
+  source = "./modules/service-pair"
+  
+  pair_name                = "emotrack-pair-2"
+  docker_compose_template  = "${path.module}/modules/microservice/docker-compose-pair-2.tpl"
+  vpc_id                   = var.vpc_id
+  subnet1                  = var.subnet1
+  subnet2                  = var.subnet2
+  jwt_secret               = var.jwt_secret
+  docker_hub_username      = var.docker_hub_username
+  tag                      = var.image_tag
+  alb_sg_id                = aws_security_group.alb_sg.id
+  alb_listener_arn         = aws_lb_listener.main_listener.arn
+  priority_offset          = 110
+  
+  services = [
+    {
+      name  = "emotion-service"
+      port  = 3002
+      image = "${var.docker_hub_username}/emotrack-emotion-service"
+      path  = "/emotions"
+    },
+    {
+      name  = "report-service"
+      port  = 3004
+      image = "${var.docker_hub_username}/emotrack-report-service"
+      path  = "/reports"
+    }
+  ]
+}
+
+# Pair 3: Notification Service (3005) + User Service (3006)
+module "pair_3" {
+  source = "./modules/service-pair"
+  
+  pair_name                = "emotrack-pair-3"
+  docker_compose_template  = "${path.module}/modules/microservice/docker-compose-pair-3.tpl"
+  vpc_id                   = var.vpc_id
+  subnet1                  = var.subnet1
+  subnet2                  = var.subnet2
+  jwt_secret               = var.jwt_secret
+  docker_hub_username      = var.docker_hub_username
+  tag                      = var.image_tag
+  alb_sg_id                = aws_security_group.alb_sg.id
+  alb_listener_arn         = aws_lb_listener.main_listener.arn
+  priority_offset          = 120
+  
+  services = [
+    {
+      name  = "notification-service"
+      port  = 3005
+      image = "${var.docker_hub_username}/emotrack-notification-service"
+      path  = "/notifications"
+    },
+    {
+      name  = "user-service"
+      port  = 3006
+      image = "${var.docker_hub_username}/emotrack-user-service"
+      path  = "/users"
+    }
+  ]
+}
+
+# Pair 4: Analytics Service (3007) + Goal Service (3008)
+module "pair_4" {
+  source = "./modules/service-pair"
+  
+  pair_name                = "emotrack-pair-4"
+  docker_compose_template  = "${path.module}/modules/microservice/docker-compose-pair-4.tpl"
+  vpc_id                   = var.vpc_id
+  subnet1                  = var.subnet1
+  subnet2                  = var.subnet2
+  jwt_secret               = var.jwt_secret
+  docker_hub_username      = var.docker_hub_username
+  tag                      = var.image_tag
+  alb_sg_id                = aws_security_group.alb_sg.id
+  alb_listener_arn         = aws_lb_listener.main_listener.arn
+  priority_offset          = 130
+  
+  services = [
+    {
+      name  = "analytics-service"
+      port  = 3007
+      image = "${var.docker_hub_username}/emotrack-analytics-service"
+      path  = "/analytics"
+    },
+    {
+      name  = "goal-service"
+      port  = 3008
+      image = "${var.docker_hub_username}/emotrack-goal-service"
+      path  = "/goals"
+    }
+  ]
+}
+
+# Pair 5: Journal Service (3009) + Recommendation Service (3010)
+module "pair_5" {
+  source = "./modules/service-pair"
+  
+  pair_name                = "emotrack-pair-5"
+  docker_compose_template  = "${path.module}/modules/microservice/docker-compose-pair-5.tpl"
+  vpc_id                   = var.vpc_id
+  subnet1                  = var.subnet1
+  subnet2                  = var.subnet2
+  jwt_secret               = var.jwt_secret
+  docker_hub_username      = var.docker_hub_username
+  tag                      = var.image_tag
+  alb_sg_id                = aws_security_group.alb_sg.id
+  alb_listener_arn         = aws_lb_listener.main_listener.arn
+  priority_offset          = 140
+  
+  services = [
+    {
+      name  = "journal-service"
+      port  = 3009
+      image = "${var.docker_hub_username}/emotrack-journal-service"
+      path  = "/journal"
+    },
+    {
+      name  = "recommendation-service"
+      port  = 3010
+      image = "${var.docker_hub_username}/emotrack-recommendation-service"
+      path  = "/recommendations"
+    }
+  ]
+}
+
+# ============================================================
+# MONITORING
+# ============================================================
+
+# SNS Topic y Subscription para notificaciones
 resource "aws_sns_topic" "asg_alerts" {
-  name = "asg-alerts-topic"
+  name = "emotrack-asg-alerts-topic"
 }
 
 resource "aws_sns_topic_subscription" "email" {
@@ -28,24 +263,7 @@ resource "aws_sns_topic_subscription" "email" {
   endpoint  = "ievinan@uce.edu.ec"
 }
 
-# --- CloudWatch Alarm para el Auto Scaling Group de Microservices ---
-resource "aws_cloudwatch_metric_alarm" "asg_high_cpu" {
-  alarm_name          = "emotrack-services-asg-high-cpu"
-  alarm_description   = "High CPU utilization alarm for EmoTrack Services ASG"
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
-  statistic           = "Average"
-  period              = 120
-  dimensions = {
-    AutoScalingGroupName = module.emotrack_microservices.asg_name
-  }
-  comparison_operator = "GreaterThanThreshold"
-  threshold           = 80
-  evaluation_periods  = 2
-  alarm_actions       = [aws_sns_topic.asg_alerts.arn]
-}
-
-# --- CloudWatch Dashboard para monitoreo de Microservices ---
+# CloudWatch Dashboard para monitoreo
 resource "aws_cloudwatch_dashboard" "emotrack_dashboard" {
   dashboard_name = "emotrack-microservices-dashboard"
   dashboard_body = jsonencode({
@@ -58,12 +276,16 @@ resource "aws_cloudwatch_dashboard" "emotrack_dashboard" {
         "height" = 6,
         "properties" = {
           "metrics" = [
-            [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", module.emotrack_microservices.asg_name, { "label": "Services ASG" } ]
+            [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", module.pair_1.asg_name, { "label": "Pair 1 (API + Auth)" } ],
+            [ "...", module.pair_2.asg_name, { "label": "Pair 2 (Emotion + Report)" } ],
+            [ "...", module.pair_3.asg_name, { "label": "Pair 3 (Notification + User)" } ],
+            [ "...", module.pair_4.asg_name, { "label": "Pair 4 (Analytics + Goal)" } ],
+            [ "...", module.pair_5.asg_name, { "label": "Pair 5 (Journal + Recommendation)" } ]
           ],
           "period" = 300,
           "stat" = "Average",
           "region" = var.AWS_REGION,
-          "title" = "Microservices ASG CPU Utilization"
+          "title" = "CPU Utilization by Service Pair"
         }
       },
       {
@@ -74,12 +296,12 @@ resource "aws_cloudwatch_dashboard" "emotrack_dashboard" {
         "height" = 6,
         "properties" = {
           "metrics" = [
-            [ "AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", module.emotrack_microservices.alb_arn_suffix, { "label": "Services ALB" } ]
+            [ "AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", aws_lb.main_alb.arn_suffix ]
           ],
           "period" = 300,
           "stat" = "Average",
           "region" = var.AWS_REGION,
-          "title" = "Microservices ALB Response Time"
+          "title" = "ALB Response Time"
         }
       },
       {
@@ -90,14 +312,12 @@ resource "aws_cloudwatch_dashboard" "emotrack_dashboard" {
         "height" = 6,
         "properties" = {
           "metrics" = [
-            [ "AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", module.emotrack_microservices.tg_auth_service_arn_suffix, { "label": "Auth Service" } ],
-            [ "...", module.emotrack_microservices.tg_emotion_service_arn_suffix, { "label": "Emotion Service" } ],
-            [ "...", module.emotrack_microservices.tg_report_service_arn_suffix, { "label": "Report Service" } ]
+            [ "AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.main_alb.arn_suffix ]
           ],
           "period" = 300,
-          "stat" = "Average",
+          "stat" = "Sum",
           "region" = var.AWS_REGION,
-          "title" = "Healthy Hosts per Microservice"
+          "title" = "Request Count"
         }
       }
     ]
