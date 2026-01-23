@@ -14,3 +14,4 @@ ENV NODE_ENV=production
 ENV PORT=3007
 EXPOSE 3007
 CMD ["node", "dist/index.js"]
+

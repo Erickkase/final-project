@@ -42,3 +42,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
 
 # Comando de inicio
 CMD ["node", "dist/index.js"]
+
