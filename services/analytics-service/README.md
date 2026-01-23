@@ -72,3 +72,5 @@ docker run -p 3007:3007 analytics-service
 ✅ Coverage > 70%
 ✅ Integrado con CI/CD
 
+
+
