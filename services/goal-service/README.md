@@ -1,5 +1,7 @@
 # Goal Service
 
+> 🎯 Microservicio de gestión de objetivos y metas de bienestar
+
 Gestión de objetivos y metas de bienestar emocional para EmoTrack.
 
 ## Características

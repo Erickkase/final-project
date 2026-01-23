@@ -1,5 +1,7 @@
 # User Service
 
+> 👤 Microservicio de gestión de usuarios y perfiles para EmoTrack
+
 Gestión de perfiles y configuración de usuarios para EmoTrack.
 
 ## Características

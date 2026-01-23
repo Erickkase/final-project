@@ -1,5 +1,7 @@
 # Analytics Service
 
+> 📊 Microservicio de análisis avanzado de datos emocionales
+
 Análisis avanzado de datos emocionales para EmoTrack.
 
 ## Características

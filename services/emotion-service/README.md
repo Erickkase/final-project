@@ -1,5 +1,7 @@
 # Emotion Service - EmoTrack Platform
 
+> 💚 Microservicio para análisis y seguimiento emocional en tiempo real
+
 Servicio que gestiona el registro, análisis y seguimiento de emociones de los usuarios en la plataforma EmoTrack.
 
 ## 📋 Descripción
