@@ -72,27 +72,12 @@ jobs:
             done
           fi
 
-  # Build and Push All Services (Unified Job)
-  build-and-push-services:
-    name: Build & Push ${{ matrix.service.name }}
+  # Build and Push Auth Service
+  build-auth-service:
+    name: Build & Push Auth Service
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: |
-      needs.detect-changes.outputs[matrix.service.output] == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        service:
-          - { name: 'API Gateway', folder: 'api-gateway', image: 'emotrack-api-gateway', output: 'api-gateway' }
-          - { name: 'Auth Service', folder: 'auth-service', image: 'emotrack-auth-service', output: 'auth-service' }
-          - { name: 'Emotion Service', folder: 'emotion-service', image: 'emotrack-emotion-service', output: 'emotion-service' }
-          - { name: 'Report Service', folder: 'report-service', image: 'emotrack-report-service', output: 'report-service' }
-          - { name: 'Notification Service', folder: 'notification-service', image: 'emotrack-notification-service', output: 'notification-service' }
-          - { name: 'User Service', folder: 'user-service', image: 'emotrack-user-service', output: 'user-service' }
-          - { name: 'Analytics Service', folder: 'analytics-service', image: 'emotrack-analytics-service', output: 'analytics-service' }
-          - { name: 'Goal Service', folder: 'goal-service', image: 'emotrack-goal-service', output: 'goal-service' }
-          - { name: 'Journal Service', folder: 'journal-service', image: 'emotrack-journal-service', output: 'journal-service' }
-          - { name: 'Recommendation Service', folder: 'recommendation-service', image: 'emotrack-recommendation-service', output: 'recommendation-service' }
+    if: needs.detect-changes.outputs.auth-service == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -106,15 +91,312 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build and push ${{ matrix.service.name }}
+      - name: Build and push Auth Service
         uses: docker/build-push-action@v5
         with:
-          context: ./services/${{ matrix.service.folder }}
-          file: ./services/${{ matrix.service.folder }}/Dockerfile
+          context: ./services/auth-service
+          file: ./services/auth-service/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ matrix.service.image }}:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ matrix.service.image }}:v1.${{ github.run_number }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-auth-service:v1.${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+
+  # Build and Push Emotion Service
+  build-emotion-service:
+    name: Build & Push Emotion Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.emotion-service == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push Emotion Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/emotion-service
+          file: ./services/emotion-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-emotion-service:v1.${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+
+  # Build and Push Report Service
+  build-report-service:
+    name: Build & Push Report Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.report-service == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push Report Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/report-service
+          file: ./services/report-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-report-service:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-report-service:v1.${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+
+  # Build and Push API Gateway
+  build-api-gateway:
+    name: Build & Push API Gateway
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api-gateway == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push API Gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/api-gateway
+          file: ./services/api-gateway/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-api-gateway:v1.${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+
+  # Build and Push Notification Service
+  build-notification-service:
+    name: Build & Push Notification Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.notification-service == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push Notification Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/notification-service
+          file: ./services/notification-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-notification-service:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-notification-service:v1.${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+
+  # Build and Push User Service
+  build-user-service:
+    name: Build & Push User Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user-service == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push User Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/user-service
+          file: ./services/user-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-user-service:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-user-service:v1.${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+
+  # Build and Push Analytics Service
+  build-analytics-service:
+    name: Build & Push Analytics Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.analytics-service == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push Analytics Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/analytics-service
+          file: ./services/analytics-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-analytics-service:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-analytics-service:v1.${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+
+  # Build and Push Goal Service
+  build-goal-service:
+    name: Build & Push Goal Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.goal-service == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push Goal Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/goal-service
+          file: ./services/goal-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-goal-service:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-goal-service:v1.${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+
+  # Build and Push Journal Service
+  build-journal-service:
+    name: Build & Push Journal Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.journal-service == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push Journal Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/journal-service
+          file: ./services/journal-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-journal-service:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-journal-service:v1.${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+
+  # Build and Push Recommendation Service
+  build-recommendation-service:
+    name: Build & Push Recommendation Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.recommendation-service == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push Recommendation Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/recommendation-service
+          file: ./services/recommendation-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-recommendation-service:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/emotrack-recommendation-service:v1.${{ github.run_number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
@@ -126,14 +408,34 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - detect-changes
-      - build-and-push-services
+      - build-api-gateway
+      - build-auth-service
+      - build-emotion-service
+      - build-report-service
+      - build-notification-service
+      - build-user-service
+      - build-analytics-service
+      - build-goal-service
+      - build-journal-service
+      - build-recommendation-service
     if: always()
     steps:
       - name: Print Summary
         run: |
           echo "## 🐳 Docker Build & Push Summary"
           echo ""
-          echo "All microservices have been built and pushed to Docker Hub"
+          echo "| Service | Status |"
+          echo "|---------|--------|"
+          echo "| API Gateway | ${{ needs.build-api-gateway.result }} |"
+          echo "| Auth Service | ${{ needs.build-auth-service.result }} |"
+          echo "| Emotion Service | ${{ needs.build-emotion-service.result }} |"
+          echo "| Report Service | ${{ needs.build-report-service.result }} |"
+          echo "| Notification Service | ${{ needs.build-notification-service.result }} |"
+          echo "| User Service | ${{ needs.build-user-service.result }} |"
+          echo "| Analytics Service | ${{ needs.build-analytics-service.result }} |"
+          echo "| Goal Service | ${{ needs.build-goal-service.result }} |"
+          echo "| Journal Service | ${{ needs.build-journal-service.result }} |"
+          echo "| Recommendation Service | ${{ needs.build-recommendation-service.result }} |"
           echo ""
           echo "✅ Images pushed to Docker Hub"
           echo "📝 Tags: latest, v1.${{ github.run_number }}"
