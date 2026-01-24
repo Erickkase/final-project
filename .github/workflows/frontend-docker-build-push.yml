@@ -158,6 +158,7 @@ jobs:
             -var="AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
             -var="AWS_SESSION_TOKEN=${{ secrets.AWS_SESSION_TOKEN }}" \
             -var="docker_hub_username=${{ secrets.DOCKER_HUB_USERNAME }}" \
+            -var="jwt_secret=frontend-only-dummy-value" \
             -var="image_tag=v1.${{ github.run_number }}" \
             -var="backend_api_url=${{ secrets.FRONTEND_API_URL || 'http://placeholder' }}" \
             -var="vpc_id=${{ secrets.VPC_ID }}" \
