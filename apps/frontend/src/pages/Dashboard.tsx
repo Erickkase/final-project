@@ -30,6 +30,7 @@ export const Dashboard = () => {
       if (isDemoMode) {
         // Load demo data
         const demoSummary: EmotionSummary = {
+          userId: 'demo-admin',
           totalEmotions: 45,
           emotionDistribution: {
             'Happy': 15,
@@ -39,7 +40,8 @@ export const Dashboard = () => {
             'Calm': 7
           },
           averageIntensity: 6.5,
-          lastUpdated: new Date().toISOString()
+          mostFrequentEmotion: 'Happy',
+          trends: []
         };
         
         const demoTrend15: EmotionTrend[] = Array.from({ length: 15 }, (_, i) => ({
@@ -67,16 +69,16 @@ export const Dashboard = () => {
         }));
         
         const demoStats: EmotionStats = {
-          totalCount: 45,
-          averageIntensity: 6.5,
-          mostFrequentEmotion: 'Happy',
-          emotionsByType: {
+          stats: {
             'Happy': 15,
             'Sad': 8,
             'Angry': 5,
             'Anxious': 10,
             'Calm': 7
-          }
+          },
+          averageIntensity: '6.5',
+          mostFrequentEmotion: 'Happy',
+          period: 'last-30-days'
         };
         
         setSummary(demoSummary);

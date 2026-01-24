@@ -32,8 +32,10 @@ export const EmotionList = () => {
             type: 'alegria',
             intensity: 8,
             description: 'Excited about the new project launch!',
+            tags: ['work', 'success'],
             location: 'Office',
-            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
           },
           {
             emotionId: 'demo-2',
@@ -41,8 +43,10 @@ export const EmotionList = () => {
             type: 'tristeza',
             intensity: 5,
             description: 'Missing my family during the holidays',
+            tags: ['family', 'personal'],
             location: 'Home',
-            timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+            createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
           },
           {
             emotionId: 'demo-3',
@@ -50,8 +54,10 @@ export const EmotionList = () => {
             type: 'miedo',
             intensity: 6,
             description: 'Nervous about the upcoming presentation',
+            tags: ['work', 'stress'],
             location: 'Conference Room',
-            timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
           },
           {
             emotionId: 'demo-4',
@@ -59,8 +65,10 @@ export const EmotionList = () => {
             type: 'ira',
             intensity: 7,
             description: 'Frustrated with traffic delay',
+            tags: ['stress', 'daily'],
             location: 'Car',
-            timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+            createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
           },
           {
             emotionId: 'demo-5',
@@ -68,8 +76,10 @@ export const EmotionList = () => {
             type: 'alegria',
             intensity: 9,
             description: 'Achieved my fitness goal!',
+            tags: ['personal', 'achievement'],
             location: 'Gym',
-            timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
           },
           {
             emotionId: 'demo-6',
@@ -77,8 +87,10 @@ export const EmotionList = () => {
             type: 'tristeza',
             intensity: 4,
             description: 'Feeling lonely this evening',
+            tags: ['personal', 'mood'],
             location: 'Home',
-            timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+            createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
           }
         ];
         setEmotions(demoEmotions);
