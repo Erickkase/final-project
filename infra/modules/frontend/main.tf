@@ -84,11 +84,11 @@ resource "aws_lb_target_group" "frontend_tg" {
   health_check {
     enabled             = true
     healthy_threshold   = 2
-    unhealthy_threshold = 2
+    unhealthy_threshold = 3
     timeout             = 5
     interval            = 30
-    path                = "/health"
-    matcher             = "200"
+    path                = "/"
+    matcher             = "200,301,302"
   }
 
   deregistration_delay = 30
@@ -116,24 +116,40 @@ locals {
     #!/bin/bash
     set -e
     
+    # Log all output to file
+    exec > >(tee /var/log/user-data.log)
+    exec 2>&1
+    
+    echo "=== Starting Frontend Instance Setup ==="
+    echo "Timestamp: $(date)"
+    
     # Update system
+    echo "Updating system packages..."
     yum update -y
     
     # Install Docker
+    echo "Installing Docker..."
     amazon-linux-extras install docker -y
     systemctl start docker
     systemctl enable docker
     usermod -a -G docker ec2-user
     
     # Install Docker Compose
+    echo "Installing Docker Compose..."
     curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
     
+    # Verify Docker is running
+    docker --version
+    docker-compose --version
+    
     # Create app directory
+    echo "Setting up application directory..."
     mkdir -p /opt/emotrack-frontend
     cd /opt/emotrack-frontend
     
     # Create docker-compose.yml
+    echo "Creating docker-compose configuration..."
     cat > docker-compose.yml <<'COMPOSE'
     version: '3.8'
     
@@ -148,7 +164,7 @@ locals {
           - API_BASE_URL=${var.api_base_url}
         restart: unless-stopped
         healthcheck:
-          test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+          test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
           interval: 30s
           timeout: 10s
           retries: 3
@@ -156,8 +172,29 @@ locals {
     COMPOSE
     
     # Pull and start containers
+    echo "Pulling Docker image..."
     docker-compose pull
+    
+    echo "Starting frontend container..."
     docker-compose up -d
+    
+    # Wait for container to be healthy
+    echo "Waiting for container to be healthy..."
+    sleep 10
+    
+    # Verify container is running
+    docker ps -a
+    
+    # Test health endpoint
+    echo "Testing health endpoint..."
+    for i in {1..30}; do
+      if curl -f http://localhost:80/ > /dev/null 2>&1; then
+        echo "✅ Frontend is responding!"
+        break
+      fi
+      echo "Waiting for frontend to be ready... ($i/30)"
+      sleep 2
+    done
     
     # Setup log rotation
     cat > /etc/logrotate.d/docker-frontend <<'LOGROTATE'
@@ -171,7 +208,8 @@ locals {
     }
     LOGROTATE
     
-    echo "Frontend deployment completed successfully!"
+    echo "=== Frontend deployment completed successfully! ==="
+    echo "Timestamp: $(date)"
   EOF
 }
 

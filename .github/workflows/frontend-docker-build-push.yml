@@ -188,6 +188,52 @@ jobs:
               exit 1
             fi
           fi
+          
+      - name: Verify ASG Created
+        id: verify-asg-created
+        continue-on-error: true
+        run: |
+          echo "Verificando que el ASG se haya creado correctamente..."
+          
+          ASG_NAME="emotrack-frontend-asg"
+          
+          # Wait a bit for AWS to sync
+          sleep 10
+          
+          # Check ASG exists
+          if aws autoscaling describe-auto-scaling-groups \
+            --auto-scaling-group-names "$ASG_NAME" \
+            --query 'AutoScalingGroups[0].AutoScalingGroupName' \
+            --output text 2>/dev/null | grep -q "$ASG_NAME"; then
+            
+            echo "✅ ASG creado exitosamente"
+            
+            # Get details
+            ASG_INFO=$(aws autoscaling describe-auto-scaling-groups \
+              --auto-scaling-group-names "$ASG_NAME" \
+              --query 'AutoScalingGroups[0]')
+            
+            MIN_SIZE=$(echo "$ASG_INFO" | jq -r '.MinSize')
+            DESIRED=$(echo "$ASG_INFO" | jq -r '.DesiredCapacity')
+            CURRENT=$(echo "$ASG_INFO" | jq -r '.Instances | length')
+            
+            echo "📊 ASG Status:"
+            echo "  Min Size: $MIN_SIZE"
+            echo "  Desired: $DESIRED"
+            echo "  Current Instances: $CURRENT"
+            
+            # If no instances, force update
+            if [ "$CURRENT" -eq 0 ] && [ "$DESIRED" -gt 0 ]; then
+              echo "⚠️  No instances running, forcing ASG update..."
+              aws autoscaling update-auto-scaling-group \
+                --auto-scaling-group-name "$ASG_NAME" \
+                --min-size "$MIN_SIZE" \
+                --desired-capacity "$DESIRED"
+              echo "✅ ASG updated to create instances"
+            fi
+          else
+            echo "⚠️  ASG no encontrado aún, se creará en próximo apply"
+          fi
 
       - name: Get Frontend ALB DNS
         id: alb-dns
