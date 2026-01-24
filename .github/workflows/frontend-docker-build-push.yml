@@ -348,9 +348,9 @@ jobs:
             --auto-scaling-group-name ${{ steps.get-asg.outputs.frontend_asg_name }} \
             --preferences '{
               "MinHealthyPercentage": 50,
-              "InstanceWarmup": 300,
+              "InstanceWarmup": 120,
               "CheckpointPercentages": [50, 100],
-              "CheckpointDelay": 300
+              "CheckpointDelay": 60
             }' \
             --query 'InstanceRefreshId' \
             --output text)
@@ -362,24 +362,48 @@ jobs:
         if: steps.start-refresh.outputs.refresh_id != ''
         run: |
           echo "Waiting for instance refresh to complete..."
+          echo "Refresh ID: ${{ steps.start-refresh.outputs.refresh_id }}"
+          
+          MAX_WAIT_TIME=1800  # 30 minutes
+          ELAPSED_TIME=0
+          SLEEP_INTERVAL=30
           
           while true; do
-            STATUS=$(aws autoscaling describe-instance-refreshes \
+            # Get detailed refresh information
+            REFRESH_INFO=$(aws autoscaling describe-instance-refreshes \
               --auto-scaling-group-name ${{ steps.get-asg.outputs.frontend_asg_name }} \
-              --query 'InstanceRefreshes[0].Status' \
-              --output text)
+              --instance-refresh-ids ${{ steps.start-refresh.outputs.refresh_id }} \
+              --query 'InstanceRefreshes[0]' \
+              --output json)
             
-            echo "Current status: $STATUS"
+            STATUS=$(echo "$REFRESH_INFO" | jq -r '.Status')
+            PERCENTAGE=$(echo "$REFRESH_INFO" | jq -r '.PercentageComplete // 0')
+            INSTANCES_TO_UPDATE=$(echo "$REFRESH_INFO" | jq -r '.InstancesToUpdate // 0')
+            
+            echo "⏱️  Elapsed: ${ELAPSED_TIME}s / ${MAX_WAIT_TIME}s"
+            echo "📊 Status: $STATUS | Progress: ${PERCENTAGE}% | Instances remaining: $INSTANCES_TO_UPDATE"
             
             if [ "$STATUS" = "Successful" ]; then
               echo "✅ Instance refresh completed successfully!"
               break
             elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ]; then
               echo "❌ Instance refresh failed with status: $STATUS"
+              echo "Failure reason:"
+              echo "$REFRESH_INFO" | jq -r '.StatusReason // "No reason provided"'
               exit 1
             fi
             
-            sleep 30
+            # Check timeout
+            if [ $ELAPSED_TIME -ge $MAX_WAIT_TIME ]; then
+              echo "⚠️ Timeout reached (${MAX_WAIT_TIME}s). Current status: $STATUS"
+              echo "Instance refresh is still in progress but we'll continue."
+              echo "You can monitor it manually with:"
+              echo "aws autoscaling describe-instance-refreshes --auto-scaling-group-name ${{ steps.get-asg.outputs.frontend_asg_name }}"
+              break
+            fi
+            
+            sleep $SLEEP_INTERVAL
+            ELAPSED_TIME=$((ELAPSED_TIME + SLEEP_INTERVAL))
           done
 
       - name: Skip Message
