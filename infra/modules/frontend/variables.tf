@@ -50,3 +50,9 @@ variable "api_base_url" {
   description = "Backend API base URL (ALB DNS of microservices)"
   type        = string
 }
+
+variable "ami_id" {
+  description = "AMI ID for EC2 instances"
+  type        = string
+  default     = "ami-020cba7c55df1f615"
+}

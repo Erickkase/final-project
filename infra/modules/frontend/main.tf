@@ -216,7 +216,7 @@ locals {
 # Launch Template for Frontend
 resource "aws_launch_template" "frontend_lt" {
   name_prefix   = "${var.name}-frontend-lt"
-  image_id      = "ami-0c02fb55b34c0e94e" # Amazon Linux 2 AMI
+  image_id      = var.ami_id
   instance_type = "t2.micro"
   key_name      = aws_key_pair.frontend_key.key_name
 
