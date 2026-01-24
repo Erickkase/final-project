@@ -22,16 +22,80 @@ export const Dashboard = () => {
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const [summaryData, trend15Data, trend30Data, statsData] = await Promise.all([
-        reportService.getSummary(),
-        reportService.getTrend(15),
-        reportService.getTrend(30),
-        emotionService.getStats(user!.userId),
-      ]);
-      setSummary(summaryData);
-      setTrend15(trend15Data);
-      setTrend30(trend30Data);
-      setStats(statsData);
+      
+      // Check if demo mode (admin token)
+      const token = localStorage.getItem('token');
+      const isDemoMode = token?.startsWith('demo-admin-token');
+      
+      if (isDemoMode) {
+        // Load demo data
+        const demoSummary: EmotionSummary = {
+          totalEmotions: 45,
+          emotionDistribution: {
+            'Happy': 15,
+            'Sad': 8,
+            'Angry': 5,
+            'Anxious': 10,
+            'Calm': 7
+          },
+          averageIntensity: 6.5,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        const demoTrend15: EmotionTrend[] = Array.from({ length: 15 }, (_, i) => ({
+          date: new Date(Date.now() - (14 - i) * 24 * 60 * 60 * 1000).toISOString(),
+          emotions: {
+            Happy: Math.floor(Math.random() * 5) + 1,
+            Sad: Math.floor(Math.random() * 3),
+            Angry: Math.floor(Math.random() * 2),
+            Anxious: Math.floor(Math.random() * 3),
+            Calm: Math.floor(Math.random() * 4)
+          },
+          totalEmotions: Math.floor(Math.random() * 10) + 5
+        }));
+        
+        const demoTrend30: EmotionTrend[] = Array.from({ length: 30 }, (_, i) => ({
+          date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString(),
+          emotions: {
+            Happy: Math.floor(Math.random() * 5) + 1,
+            Sad: Math.floor(Math.random() * 3),
+            Angry: Math.floor(Math.random() * 2),
+            Anxious: Math.floor(Math.random() * 3),
+            Calm: Math.floor(Math.random() * 4)
+          },
+          totalEmotions: Math.floor(Math.random() * 10) + 5
+        }));
+        
+        const demoStats: EmotionStats = {
+          totalCount: 45,
+          averageIntensity: 6.5,
+          mostFrequentEmotion: 'Happy',
+          emotionsByType: {
+            'Happy': 15,
+            'Sad': 8,
+            'Angry': 5,
+            'Anxious': 10,
+            'Calm': 7
+          }
+        };
+        
+        setSummary(demoSummary);
+        setTrend15(demoTrend15);
+        setTrend30(demoTrend30);
+        setStats(demoStats);
+      } else {
+        // Normal API calls
+        const [summaryData, trend15Data, trend30Data, statsData] = await Promise.all([
+          reportService.getSummary(),
+          reportService.getTrend(15),
+          reportService.getTrend(30),
+          emotionService.getStats(user!.userId),
+        ]);
+        setSummary(summaryData);
+        setTrend15(trend15Data);
+        setTrend30(trend30Data);
+        setStats(statsData);
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       setError(error.response?.data?.message || 'Failed to load dashboard data');

@@ -17,6 +17,28 @@ export const Login = () => {
     setLoading(true);
 
     try {
+      // Demo mode: admin/admin credentials bypass backend
+      if (email === 'admin' && password === 'admin') {
+        // Simulate successful login with demo token
+        const demoUser = {
+          id: 'demo-admin',
+          email: 'admin@demo.com',
+          name: 'Admin Demo'
+        };
+        const demoToken = 'demo-admin-token-' + Date.now();
+        
+        // Store in localStorage (same as real login)
+        localStorage.setItem('token', demoToken);
+        localStorage.setItem('user', JSON.stringify(demoUser));
+        
+        // Trigger auth context update
+        window.dispatchEvent(new Event('storage'));
+        
+        navigate('/dashboard');
+        return;
+      }
+      
+      // Normal login flow
       await login(email, password);
       navigate('/dashboard');
     } catch (err: unknown) {
@@ -91,6 +113,12 @@ export const Login = () => {
               Sign up
             </Link>
           </p>
+
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800 text-center">
+              <strong>Demo Mode:</strong> Use <code className="bg-blue-100 px-2 py-1 rounded">admin/admin</code> to view all features
+            </p>
+          </div>
         </div>
       </div>
     </div>

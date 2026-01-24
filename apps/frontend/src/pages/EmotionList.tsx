@@ -18,8 +18,74 @@ export const EmotionList = () => {
   const loadEmotions = async () => {
     try {
       setLoading(true);
-      const data = await emotionService.getEmotions(50, 0);
-      setEmotions(data);
+      
+      // Check if demo mode
+      const token = localStorage.getItem('token');
+      const isDemoMode = token?.startsWith('demo-admin-token');
+      
+      if (isDemoMode) {
+        // Generate demo emotions
+        const demoEmotions: Emotion[] = [
+          {
+            emotionId: 'demo-1',
+            userId: 'demo-admin',
+            type: 'alegria',
+            intensity: 8,
+            description: 'Excited about the new project launch!',
+            location: 'Office',
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            emotionId: 'demo-2',
+            userId: 'demo-admin',
+            type: 'tristeza',
+            intensity: 5,
+            description: 'Missing my family during the holidays',
+            location: 'Home',
+            timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            emotionId: 'demo-3',
+            userId: 'demo-admin',
+            type: 'miedo',
+            intensity: 6,
+            description: 'Nervous about the upcoming presentation',
+            location: 'Conference Room',
+            timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            emotionId: 'demo-4',
+            userId: 'demo-admin',
+            type: 'ira',
+            intensity: 7,
+            description: 'Frustrated with traffic delay',
+            location: 'Car',
+            timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            emotionId: 'demo-5',
+            userId: 'demo-admin',
+            type: 'alegria',
+            intensity: 9,
+            description: 'Achieved my fitness goal!',
+            location: 'Gym',
+            timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            emotionId: 'demo-6',
+            userId: 'demo-admin',
+            type: 'tristeza',
+            intensity: 4,
+            description: 'Feeling lonely this evening',
+            location: 'Home',
+            timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+        setEmotions(demoEmotions);
+      } else {
+        const data = await emotionService.getEmotions(50, 0);
+        setEmotions(data);
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       setError(error.response?.data?.message || 'Failed to load emotions');
@@ -32,6 +98,16 @@ export const EmotionList = () => {
     if (!confirm('Are you sure you want to delete this emotion?')) return;
 
     try {
+      // Check if demo mode
+      const token = localStorage.getItem('token');
+      const isDemoMode = token?.startsWith('demo-admin-token');
+      
+      if (isDemoMode) {
+        // Just remove from local state in demo mode
+        setEmotions(emotions.filter(e => e.emotionId !== emotionId));
+        return;
+      }
+      
       await emotionService.deleteEmotion(emotionId);
       setEmotions(emotions.filter(e => e.emotionId !== emotionId));
     } catch (err: unknown) {

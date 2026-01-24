@@ -123,16 +123,16 @@ locals {
     echo "=== Starting Frontend Instance Setup ==="
     echo "Timestamp: $(date)"
     
-    # Update system
+    # Update system (Ubuntu)
     echo "Updating system packages..."
-    yum update -y
+    apt-get update -y
     
-    # Install Docker
+    # Install Docker (Ubuntu)
     echo "Installing Docker..."
-    amazon-linux-extras install docker -y
+    apt-get install -y docker.io
     systemctl start docker
     systemctl enable docker
-    usermod -a -G docker ec2-user
+    usermod -a -G docker ubuntu
     
     # Install Docker Compose
     echo "Installing Docker Compose..."
