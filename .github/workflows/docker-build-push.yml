@@ -39,38 +39,19 @@ jobs:
       - name: Detect changed services
         id: changes
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "🐳 Manual trigger - Building all service images"
-            echo "api-gateway=true" >> $GITHUB_OUTPUT
-            echo "auth-service=true" >> $GITHUB_OUTPUT
-            echo "emotion-service=true" >> $GITHUB_OUTPUT
-            echo "report-service=true" >> $GITHUB_OUTPUT
-            echo "notification-service=true" >> $GITHUB_OUTPUT
-            echo "user-service=true" >> $GITHUB_OUTPUT
-            echo "analytics-service=true" >> $GITHUB_OUTPUT
-            echo "goal-service=true" >> $GITHUB_OUTPUT
-            echo "journal-service=true" >> $GITHUB_OUTPUT
-            echo "recommendation-service=true" >> $GITHUB_OUTPUT
-          else
-            # Get changed files from the merged PR
-            echo "🔍 Detecting changed services in PR..."
-            
-            # Get the merge commit's diff
-            CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
-            echo "Changed files:"
-            echo "$CHANGED_FILES"
-            
-            # Check which services changed
-            for service in api-gateway auth-service emotion-service report-service notification-service user-service analytics-service goal-service journal-service recommendation-service; do
-              if echo "$CHANGED_FILES" | grep -q "^services/$service/"; then
-                echo "$service=true" >> $GITHUB_OUTPUT
-                echo "✅ $service changed"
-              else
-                echo "$service=false" >> $GITHUB_OUTPUT
-                echo "⏭️ $service unchanged"
-              fi
-            done
-          fi
+          echo "🐳 Building all service images for QA deployment"
+          echo "api-gateway=true" >> $GITHUB_OUTPUT
+          echo "auth-service=true" >> $GITHUB_OUTPUT
+          echo "emotion-service=true" >> $GITHUB_OUTPUT
+          echo "report-service=true" >> $GITHUB_OUTPUT
+          echo "notification-service=true" >> $GITHUB_OUTPUT
+          echo "user-service=true" >> $GITHUB_OUTPUT
+          echo "analytics-service=true" >> $GITHUB_OUTPUT
+          echo "goal-service=true" >> $GITHUB_OUTPUT
+          echo "journal-service=true" >> $GITHUB_OUTPUT
+          echo "recommendation-service=true" >> $GITHUB_OUTPUT
+          echo ""
+          echo "✅ All services will be built and pushed to Docker Hub"
 
   # Build and Push Auth Service
   build-auth-service:
