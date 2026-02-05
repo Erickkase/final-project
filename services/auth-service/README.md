@@ -1,5 +1,7 @@
 # Auth Service - EmoTrack Platform
 
+> 🔐 Microservicio de autenticación segura para la plataforma EmoTrack
+
 Servicio de autenticación con JWT que gestiona el registro, login y autenticación de usuarios en la plataforma EmoTrack.
 
 ## 📋 Descripción

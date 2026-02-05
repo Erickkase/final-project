@@ -1,5 +1,7 @@
 # Notification Service
 
+> 🔔 Microservicio de notificaciones multi-canal para EmoTrack
+
 Sistema de notificaciones en tiempo real para EmoTrack.
 
 ## Características

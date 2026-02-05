@@ -1,5 +1,7 @@
 # Journal Service
 
+> 📓 Microservicio de diario personal y reflexiones emocionales
+
 Servicio de diario personal y reflexiones emocionales para EmoTrack.
 
 ## Características
