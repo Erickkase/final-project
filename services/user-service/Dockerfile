@@ -23,3 +23,4 @@ ENV PORT=3006
 EXPOSE 3006
 
 CMD ["node", "dist/index.js"]
+

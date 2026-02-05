@@ -22,3 +22,4 @@ COPY --from=builder /app/dist ./dist
 EXPOSE 3010
 
 CMD ["node", "dist/index.js"]
+
